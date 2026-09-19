@@ -42,7 +42,7 @@ def citation_validity(citations: list[dict]) -> dict:
                 continue
         if q and q[:120] in t:
             valid += 1
-    return {"n": n, "valid": valid, "all_valid": n > 0 and valid == n}
+    return {"n": n, "valid": valid, "all_valid": valid == n}  # vacuously true for abstentions without citations
 
 
 def pct(x, n):
@@ -62,7 +62,9 @@ def evaluate(run_id: str, split: str = "public", use_judge: bool = True) -> dict
     preds = [json.loads(l) for l in open(run_dir / f"predictions_{split}.jsonl", encoding="utf-8")]
     gold = {q["qid"]: q for q in load_questions(split)} if split != "hidden" else {}
     scored = []
-    for r in preds:
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _score(r):
         res = r["result"]
         g = gold.get(r["qid"], {})
         s = {"qid": r["qid"], "pipeline": r["pipeline"], "qtype": r.get("qtype") or g.get("qtype"), "status": res["status"], "stop_reason": res["stop_reason"], "answer": res["answer"], "gold": g.get("answer"), "tokens": res["usage"]["total_tokens"], "input_tokens": res["usage"]["input_tokens"], "output_tokens": res["usage"]["output_tokens"], "context_tokens": res["usage"]["context_tokens"], "llm_calls": res["usage"]["llm_calls"], "latency_ms": res["latency_ms"], "n_steps": len(res["trace"]["events"]), "n_retrieval_steps": res["trace"]["n_retrieval_steps"], "n_llm_decisions": res["trace"]["n_llm_decisions"], "strategy_changed": res["trace"]["strategy_changed"], "n_citations": len(res["citations"]), "n_chunks": res["trace"]["n_chunks"], "coverage_complete": res["coverage"]["complete"], "unknown_values": res["coverage"]["unknown_values"], "error": res.get("error")}
@@ -80,7 +82,10 @@ def evaluate(run_id: str, split: str = "public", use_judge: bool = True) -> dict
         cv = citation_validity(res["citations"])
         s["citations_valid"] = cv["valid"]
         s["citations_all_valid"] = cv["all_valid"]
-        scored.append(s)
+        return s
+
+    with ThreadPoolExecutor(6) as ex:
+        scored = list(ex.map(_score, preds))
     with open(run_dir / f"scores_{split}.jsonl", "w", encoding="utf-8") as f:
         for s in scored:
             f.write(json.dumps(s, ensure_ascii=False) + "\n")

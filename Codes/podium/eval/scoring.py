@@ -29,8 +29,8 @@ def is_numeric(s: str) -> bool:
 def score_answer(pred: list[str], gold: list[str]) -> dict:
     p = [normalize(x) for x in pred if x]
     g = [normalize(x) for x in gold if x]
-    if not g:
-        return {"exact": None, "numeric": None, "note": "no gold"}
+    if not g:  # unanswerable question: abstaining (empty answer) is the correct behaviour
+        return {"exact": not p, "numeric": None, "note": "no gold; abstention expected", "ambiguous_multi": False, "n_pred": len(p), "n_gold": 0}
     out = {"exact": False, "numeric": None, "ambiguous_multi": len(p) > 1, "n_pred": len(p), "n_gold": len(g)}
     if not p:
         out["note"] = "empty prediction"

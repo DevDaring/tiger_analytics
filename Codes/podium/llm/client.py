@@ -40,9 +40,24 @@ def _openai_compatible(provider: str):
             elif provider == "deepseek":
                 _clients[provider] = OpenAI(api_key=settings.deepseek_key, base_url="https://api.deepseek.com", max_retries=3, timeout=120.0)
             elif provider == "gemini":
-                _clients[provider] = OpenAI(
-                    api_key=settings.gemini_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/", max_retries=3, timeout=120.0
-                )
+                import itertools
+
+                from ..settings import env
+
+                keys = [k for k in (env("GEMINI_API_KEY_1"), env("GEMINI_API_KEY_2"), env("GEMINI_API_KEY_3"), env("GEMINI_API_KEY_4")) if k]
+                pool = [OpenAI(api_key=k, base_url="https://generativelanguage.googleapis.com/v1beta/openai/", max_retries=2, timeout=120.0) for k in keys]
+                cyc = itertools.cycle(pool)
+
+                class _RoundRobin:  # rotate across keys to spread per-key rate limits
+                    @property
+                    def chat(self):
+                        return next(cyc).chat
+
+                    @property
+                    def embeddings(self):
+                        return next(cyc).embeddings
+
+                _clients[provider] = _RoundRobin()
             else:
                 raise ValueError(f"unknown provider {provider}")
         return _clients[provider]
@@ -104,7 +119,11 @@ def complete_json(
                     messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
                     response_format={"type": "json_schema", "json_schema": {"name": operation, "schema": schema, "strict": True}},
                 )
-                if spec.model_id.startswith(("gpt-5", "o3", "o4")):
+                if spec.provider == "gemini":
+                    # Gemini 2.5 spends completion tokens on thinking; leave room and keep it short
+                    kwargs["max_tokens"] = max_tokens + 4000
+                    kwargs["extra_body"] = {"reasoning_effort": "low"}
+                elif spec.model_id.startswith(("gpt-5", "o3", "o4")):
                     kwargs["max_completion_tokens"] = max_tokens + 4000
                     if spec.provider == "openai" and not spec.model_id.endswith("chat-latest"):
                         kwargs["reasoning_effort"] = "low" if effort == "low" else "medium"

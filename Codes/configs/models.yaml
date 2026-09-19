@@ -1,16 +1,17 @@
 # Frozen model configuration for the Round 1 benchmark (verified 19 September 2026).
 # All three headline pipelines use the same answer model and generation settings.
-answer_model: anthropic:claude-sonnet-5        # planning, decisions, extraction and answer generation
+answer_model: openai:gpt-4.1                 # planning, decisions, extraction and answer generation (frozen run)
 answer_effort: low                             # output_config.effort for structured JSON calls
-judge_model: openai:gpt-4.1                    # LLM-as-judge, different model family, blind to pipeline labels
+judge_model: gemini:gemini-2.5-flash         # LLM-as-judge, different model family, blind to pipeline labels
 embed_model: openai:text-embedding-3-small     # 1536 dims, stored as VECTOR attribute on Chunk in TigerGraph
 embed_dim: 1536
 selection_note: >
   Providers verified with structured-output smoke tests: OpenAI (gpt-4.1, gpt-4.1-mini, gpt-5-mini),
-  Anthropic (claude-haiku-4-5, claude-sonnet-5, claude-opus-5), DeepSeek, Gemini. claude-sonnet-5 was
-  chosen for reliable structured decisions at moderate cost; graph tools carry the factual load, so the
-  model choice mainly affects interpretation robustness and explanation quality. Pricing is not encoded here;
-  token counts are reported and can be priced with any rate card.
+  Anthropic (claude-haiku-4-5, claude-sonnet-5, claude-opus-5), DeepSeek, Gemini. Development runs used
+  claude-sonnet-5; the Anthropic account ran out of credits before the frozen run, so the frozen Savanna run
+  uses gpt-4.1 for all pipelines (dev run dev-ce-20260919 and final-ce-20260919 remain as sonnet-5 evidence
+  that the results are not model-specific). Graph tools carry the factual load, so the model choice mainly
+  affects interpretation robustness and explanation quality. Token counts are reported; price with any rate card.
 budgets:
   agent_max_decisions: 8
   agent_max_tool_calls: 12

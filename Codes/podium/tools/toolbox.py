@@ -217,6 +217,7 @@ class Toolbox:
         params = {"sport_norm": sn, "year": int(year), "season": season, "threshold": int(threshold), "op": op}
         res = results_by_name(self.tg.run_query("aggregate_competitors", params))
         cands = [self.ctx.add_event(vattrs(v)) for v in res.get("candidates", [])]
+        self._cohort_facts(sn, int(year), season, "competitors")
         inc, exc, unk = set(res.get("included", [])), set(res.get("excluded", [])), set(res.get("unknown", []))
         manifest = []
         for e in cands:
@@ -236,6 +237,7 @@ class Toolbox:
         params = {"sport_norm": sn, "year": int(year), "season": season}
         res = results_by_name(self.tg.run_query("max_competitors", params))
         cands = [self.ctx.add_event(vattrs(v)) for v in res.get("candidates", [])]
+        self._cohort_facts(sn, int(year), season, "competitors")
         winners = [self.ctx.add_event(vattrs(v)) for v in res.get("winners", [])]
         wids = {w["event_id"] for w in winners}
         manifest = [
@@ -248,6 +250,21 @@ class Toolbox:
         out = {"sport": disp, "sport_norm": sn, "year": year, "season": season, "max_value": res.get("max_value"), "winners": winners, "n_candidates": res.get("n_candidates", 0), "n_unknown": res.get("n_unknown", 0), "unknown_ids": sorted(res.get("unknown", [])), "manifest": manifest}
         self._record("aggregator", "max_competitors", "graph_query", params, f"max={out['max_value']} winners={len(winners)} of {out['n_candidates']} ({out['n_unknown']} unknown)", out["n_candidates"], t0, [w["event_id"] for w in winners], rationale=rationale)
         return out
+
+    def _cohort_facts(self, sn: str, year: int, season: str, predicate: str) -> None:
+        """Fetch the span-backed facts of a whole cohort in one graph query (for citations)."""
+        t0 = time.time()
+        try:
+            res = results_by_name(self.tg.run_query("cohort_facts", {"sport_norm": sn, "year": year, "season": season, "predicate": predicate}))
+        except Exception as e:  # noqa: BLE001
+            self._record("document_retriever", "cohort_facts", "graph_query", {"sport_norm": sn, "year": year, "predicate": predicate}, "error", 0, t0, error=str(e)[:200])
+            return
+        facts = [vattrs(v) for v in res.get("facts", [])]
+        for f in facts:
+            self.ctx.facts[f["fact_id"]] = f
+            self.ctx.add_edge(f["subject_id"], "HAS_FACT", f["fact_id"], f["predicate"])
+        chunks = [self.ctx.add_chunk(vattrs(v)) for v in res.get("chunks", [])]
+        self._record("document_retriever", "cohort_facts", "graph_query", {"sport_norm": sn, "year": year, "predicate": predicate}, f"{len(facts)} span-backed facts for the cohort", len(facts), t0, [c["chunk_id"] for c in chunks], rationale="source spans for every candidate value")
 
     def previous_event(self, event_id: str, rationale: str = "") -> dict:
         t0 = time.time()
@@ -368,7 +385,8 @@ class Toolbox:
         # fall back to the infobox chunk without offsets
         cid = event.get("infobox_chunk_id")
         if cid:
-            return Citation(doc_id=event["event_id"], chunk_id=cid, title=event.get("title", ""), url=doc_index().get(event["event_id"], {}).get("url", ""), quote=str(event.get(predicate + "_raw", ""))[:200], claim_ids=[claim_id] if claim_id else [], source="graph")
+            quote = str(event.get(predicate + "_raw") or event.get(predicate) or "")[:200]
+            return Citation(doc_id=event["event_id"], chunk_id=cid, title=event.get("title", ""), url=doc_index().get(event["event_id"], {}).get("url", ""), quote=quote, claim_ids=[claim_id] if claim_id else [], source="graph")
         return None
 
     def citation_for_chunk(self, chunk: dict, claim_id: str = "", quote: str = "") -> Citation:

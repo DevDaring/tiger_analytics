@@ -498,8 +498,11 @@ class Agent:
                 if c.status == "included":
                     if c.source == "prose_extraction" and c.chunk_id:
                         ch = ctx.chunks.get(c.chunk_id)
+                        rep = st.repairs.get(c.event_id) or {}
                         if ch:
-                            citations.append(tb.citation_for_chunk(ch, "count", quote=(st.repairs.get(c.event_id) or {}).get("quote", "")))
+                            cit = tb.citation_for_chunk(ch, "count", quote=rep.get("quote", ""))
+                            cit.char_start, cit.char_end, cit.source = rep.get("char_start"), rep.get("char_end"), "document"
+                            citations.append(cit)
                     else:
                         cit = tb.citation_for_fact(ctx.events[c.event_id], "competitors", "count")
                         if cit:
@@ -581,6 +584,8 @@ class Agent:
         res.explanation = data.get("explanation", "")
         llm_answer = clean_answer(data.get("answer", []))
         res.answer = machine or llm_answer
+        if i in ("count_events", "max_events") and (st.aggregate or st.superlative) and (st.aggregate or st.superlative)["n_candidates"] == 0:
+            res.answer = []  # empty cohort: no count/maximum exists in the corpus; never fall back to a model guess
         res.interpretation = {**st.interp, "llm_answer": llm_answer, "mode": self.mode}
         res.citations = citations or build_citations(ctx, tb, data.get("cited_chunk_ids", []), chunks)
         if i == "open_question":

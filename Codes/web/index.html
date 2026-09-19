@@ -354,7 +354,7 @@ async function renderBenchmark(){
       ${scored?'<div class="card"><h3>Accuracy by question type (exact match, %)</h3><div class="chart"><canvas id="c-acc"></canvas></div></div>':''}
       <div class="card"><h3>Mean tokens per answer by question type</h3><div class="chart"><canvas id="c-tok"></canvas></div></div>
       ${scored?'<div class="card"><h3>Accuracy vs mean tokens (one point per pipeline × type)</h3><div class="chart"><canvas id="c-sc"></canvas></div></div>':''}
-      <div class="card"><h3>Steps and strategy changes</h3><div class="chart"><canvas id="c-steps"></canvas></div></div>
+      <div class="card"><h3>Steps per answer <span class="muted" style="text-transform:none;letter-spacing:0">· strategy changed in ${pipes.map(p=>`${NAMES[p]} ${P[p].strategy_change_rate??0}%`).join(' · ')}</span></h3><div class="chart"><canvas id="c-steps"></canvas></div></div>
     </div>${qtTable}${failHtml}`;
   const legendFor=(ctx)=>({labels:{color:'#c3c2b7',boxWidth:10}});
   const axes={x:{ticks:{color:'#8d8c84'},grid:{color:'#2c2c2a'}},y:{ticks:{color:'#8d8c84'},grid:{color:'#2c2c2a'},beginAtZero:true}};
@@ -362,7 +362,7 @@ async function renderBenchmark(){
   if(scored&&qtypes.length)charts.push(new Chart($('#c-acc'),{type:'bar',data:{labels:qtypes,datasets:pipes.map(p=>({label:NAMES[p],data:qtypes.map(q=>s.by_qtype[q][p].accuracy_exact),backgroundColor:COLORS[p]}))},options:{...common,scales:{...axes,y:{...axes.y,max:100}}}}));
   if(qtypes.length)charts.push(new Chart($('#c-tok'),{type:'bar',data:{labels:qtypes,datasets:pipes.map(p=>({label:NAMES[p],data:qtypes.map(q=>s.by_qtype[q][p].mean_tokens),backgroundColor:COLORS[p]}))},options:common}));
   if(scored&&qtypes.length)charts.push(new Chart($('#c-sc'),{type:'scatter',data:{datasets:pipes.map(p=>({label:NAMES[p],data:qtypes.map(q=>({x:s.by_qtype[q][p].mean_tokens,y:s.by_qtype[q][p].accuracy_exact,t:q})),backgroundColor:COLORS[p],pointRadius:6}))},options:{...common,plugins:{legend:legendFor(),tooltip:{callbacks:{label:c=>`${c.dataset.label} · ${c.raw.t}: ${c.raw.y}% at ${fmt(c.raw.x)} tokens`}}},scales:{x:{...axes.x,title:{display:true,text:'mean tokens',color:'#8d8c84'}},y:{...axes.y,max:100,title:{display:true,text:'accuracy %',color:'#8d8c84'}}}}}));
-  charts.push(new Chart($('#c-steps'),{type:'bar',data:{labels:['mean steps','mean retrieval steps','strategy change %','mean LLM calls'],datasets:pipes.map(p=>({label:NAMES[p],data:[P[p].mean_steps,P[p].mean_retrieval_steps,P[p].strategy_change_rate,P[p].mean_llm_calls],backgroundColor:COLORS[p]}))},options:common}));
+  charts.push(new Chart($('#c-steps'),{type:'bar',data:{labels:['mean steps','mean retrieval steps','mean LLM calls'],datasets:pipes.map(p=>({label:NAMES[p],data:[P[p].mean_steps,P[p].mean_retrieval_steps,P[p].mean_llm_calls],backgroundColor:COLORS[p]}))},options:common}));
 }
 function fmtv(c,v){if(v==null)return '—';if(typeof v==='object')return JSON.stringify(v);if(/accuracy|rate/.test(c))return v+'%';if(/latency/.test(c))return (v/1000).toFixed(1)+'s';return fmt(v);}
 window.openFail=async function(run,split,qid,p){$('#inspect-run').value=run;$('#inspect-split').value=split;fillQids();$('#inspect-qid').value=qid;$('#inspect-pipeline').value=p;$('#inspect-load').click();show('inspect');};

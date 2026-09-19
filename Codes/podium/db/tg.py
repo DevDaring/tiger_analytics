@@ -47,7 +47,7 @@ class TG:
                 return self._token
             last = None
             for url, body in (
-                (f"{self.host}/gsql/v1/tokens", {"secret": self.secret, "lifetime": 86400 * 7, "graph": self.graph}),
+                (f"{self.host}/gsql/v1/tokens", {"secret": self.secret, "lifetime": 86400 * 7}),
                 (f"{self.host}/restpp/requesttoken", {"secret": self.secret, "lifetime": 86400 * 7}),
             ):
                 try:
@@ -92,7 +92,14 @@ class TG:
 
     def rest(self, method: str, path: str, *, json_body: Any = None, params: dict | None = None, timeout: float = 180.0) -> dict:
         kw = self._auth_kwargs()
-        r = self._client.request(method, f"{self.host}{path}", json=json_body, params=params, timeout=timeout, **kw)
+        r = None
+        for attempt in range(8):
+            r = self._client.request(method, f"{self.host}{path}", json=json_body, params=params, timeout=timeout, **kw)
+            # Savanna auto-resume: the first requests to an idle workspace return 502/503 while it starts
+            if r.status_code in (502, 503, 504) and attempt < 7:
+                time.sleep(min(30, 5 * (attempt + 1)))
+                continue
+            break
         try:
             d = r.json()
         except Exception as e:  # noqa: BLE001

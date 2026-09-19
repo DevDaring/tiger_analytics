@@ -153,6 +153,14 @@ CREATE OR REPLACE QUERY event_facts(VERTEX<Event> ev) {
   PRINT M AS medallists;
 }
 
+CREATE OR REPLACE QUERY cohort_facts(STRING sport_norm, INT year, STRING season, STRING predicate) {
+  E = SELECT e FROM Event:e WHERE e.sport_norm == sport_norm AND e.edition_year == year AND e.season == season;
+  F = SELECT f FROM E:e -(HAS_FACT)-> Fact:f WHERE predicate == "" OR f.predicate == predicate;
+  C = SELECT c FROM F:f -(SUPPORTED_BY)-> Chunk:c;
+  PRINT F AS facts;
+  PRINT C[C.chunk_id, C.doc_id, C.section, C.kind, C.text, C.char_start, C.char_end] AS chunks;
+}
+
 CREATE OR REPLACE QUERY event_subgraph(VERTEX<Event> ev) {
   SetAccum<EDGE> @@edges;
   Start = {ev};

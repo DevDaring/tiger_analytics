@@ -1,0 +1,12 @@
+{
+ "run_id": "final-ce-20260919",
+ "public_records": 300,
+ "hidden_records": 150,
+ "pipelines": [
+  "rag",
+  "graphrag",
+  "agentic_graphrag"
+ ],
+ "problems": [],
+ "note": "hidden predictions are raw outputs; their accuracy is unknown to us"
+}

@@ -72,7 +72,8 @@ def test_dates():
     assert parse_dates("22 September 2000 (heats)25 September 2000 (final)").days == {(9, 22), (9, 25)}
     assert parse_dates("2008-08-10").days == {(8, 10)}
     assert date_match("16 February 1992", "16 February 1992") == (3, "exact")
-    assert date_match("12 August 2008", "August 12, 2008")[0] == 1
+    assert date_match("12 August 2008", "August 12, 2008")[0] == 2  # same day set
+    assert date_match("6–9 August", "6-8 August")[0] == 1  # partial overlap
     assert date_match("12 August 2008", "August 12, 2004")[0] == 0
     assert date_match("9 August", "August 10")[0] == 0
 

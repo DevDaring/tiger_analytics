@@ -80,7 +80,7 @@ def run_benchmark(run_id: str, split: str, pipelines: list[str] | None = None, q
     def work(q, p):
         # Inference boundary: only the question text crosses it.
         res = run_one(p, q["question"])
-        rec = PredictionRecord(run_id=run_id, qid=q["qid"], pipeline=p, question=q["question"], qtype=q.get("qtype"), result=res, model_id=str(settings.answer_model), model_parameters={"effort": "low"}, prompt_hash=stable_hash([p, "prompts-v1"]), corpus_hash=corpus_hash, graph_snapshot_id=snap, config_hash=cfg_hash, code_commit=code_commit(), recorded_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+        rec = PredictionRecord(run_id=run_id, qid=q["qid"], pipeline=p, question=q["question"], qtype=q.get("qtype"), result=res, model_id=str(settings.answer_model), model_parameters={"effort": "low", "answer_model": str(settings.answer_model)}, prompt_hash=stable_hash([p, "prompts-v1"]), corpus_hash=corpus_hash, graph_snapshot_id=snap, config_hash=cfg_hash, code_commit=code_commit(), recorded_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
         return rec
 
     n = 0

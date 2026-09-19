@@ -1,0 +1,25 @@
+{
+ "answer_model": "openai:gpt-4.1",
+ "embed_model": "openai:text-embedding-3-small",
+ "rag_top_k": 8,
+ "context_char_budget": 18000,
+ "agent_limits": {
+  "decisions": 8,
+  "tool_calls": 12,
+  "tokens": 40000,
+  "wall_clock_s": 90.0
+ },
+ "config_hash": "c534db4257fffadb",
+ "corpus_hash": "27aef30bbe32474df782f5164262d5d765af14efc9f0288320486cee585e191a",
+ "graph_snapshot_id": "podium-27aef30b-parser-v3-chunker-v2",
+ "code_commit": "177e7e9",
+ "run_id": "final-savanna-20260919",
+ "split": "robustness",
+ "pipelines": [
+  "rag",
+  "graphrag",
+  "agentic_graphrag",
+  "fixed_plan"
+ ],
+ "started_at": "2026-09-19T15:16:26Z"
+}

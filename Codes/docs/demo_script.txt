@@ -1,0 +1,61 @@
+PODIUM — DEMO VIDEO SCRIPT (target 4:00; Round 2 requires 3–5 min)
+Record at https://tigeranalytics.duckdns.org with the "Run live" pipelines checked (RAG, GraphRAG, Agentic).
+Keep the final frozen run selected in Inspect/Benchmark (run id: see README section 8).
+
+0:00–0:20  THE QUESTION
+  "When is an investigation agent worth its cost? Podium answers questions over a frozen Olympic corpus
+   three ways on the same TigerGraph graph — RAG, GraphRAG and Agentic GraphRAG — and shows, per answer,
+   the evidence, the tokens and the reason it stopped."
+  Show: Compare screen header, status pills (TigerGraph connected · graph reconciled).
+
+0:20–0:45  SIMPLE LOOKUP (all three agree, agent stops early)
+  Click example pub-009 → Run live.
+  Say: "26 nations — all three agree. RAG finds the infobox chunk by similarity; GraphRAG reads the
+        `nations` fact with its exact source span; the agent satisfies both of its requirements after one
+        graph query and stops with `sufficient_evidence`. Here the agent is overkill — and it says so:
+        same answer, ~2× the tokens."
+  Point at the comparison statement under the cards.
+
+0:45–1:35  COMPLETE-SET COUNT (graph reasoning)
+  Click example pub-001 → Run live.
+  Say: "How many 2018 biathlon events had more than 73 competitors? RAG sees eight chunks and guesses.
+        GraphRAG runs `aggregate_competitors` in TigerGraph over the complete cohort — 11 events —
+        and the strict '>' excludes the men's relay at exactly 73."
+  Click Inspect → on GraphRAG/Agentic: show the candidate table (included/excluded), click a citation:
+  the source viewer highlights `competitors: 87` in the original article at its character offsets.
+  Show the graph path (Event —IN_SPORT→ Sport, HAS_FACT).
+
+1:35–2:15  ADAPTIVE RECOVERY (the agent changes strategy)
+  Click example rob-006 (cycling 2000, > 15 competitors) → Run live.
+  Say: "Four of the fourteen cycling events have no infobox. GraphRAG's fixed plan reports 9 with bounds
+        9–13 and stops. The agent's coverage check flags 'predicate unknown for 4 candidates', the
+        orchestrator picks `repair_missing_count`, the evidence specialist reads each article and returns a
+        verbatim quote — 'The twelve riders raced…' — verified character-for-character, then the count is
+        recomputed: 12."
+  Inspect → timeline: point at the strategy-change rows and the prose_extraction rows in the candidate table.
+  (Optional 10 s) rob-011 "Richmond Oval": GraphRAG abstains, agent falls back to fuzzy venue search.
+  (Optional 10 s) pub-044: infobox says 41,000,000 competitors; agent verifies prose (41) and reports the
+  conflict with the exact span, keeping the infobox as the primary source.
+
+2:15–3:05  MEASURED VALUE (benchmark dashboard)
+  Benchmark tab, public split. Read the three tiles and the by-type table:
+  "On the 100 public questions: RAG 47%, GraphRAG 96%, Agentic 98% exact match. The agent's lift is 2
+   points with a bootstrap CI that includes zero — on this benchmark, GraphRAG is almost always enough.
+   Where the agent helps is missing or corrupt evidence and venue spellings; where it doesn't, it costs
+   ~4,000 extra tokens per question. The fixed-plan control — same planner, no replanning — separates
+   adaptation from planning."
+  Switch split to robustness: "22 labelled questions — paraphrases, missing fields, ambiguity, unanswerable —
+   kept separate from the official numbers." Show the failure explorer; click one.
+
+3:05–3:35  HOW IT IS BUILT (architecture tab)
+  "Deterministic parser → 17,904 chunks with offsets → TigerGraph: Document/Chunk (VECTOR 1536)/Event/
+   Edition/Sport/Venue/Entity/Fact with SUPPORTED_BY spans and PREVIOUS_EVENT edges → 16 installed GSQL
+   queries. The same typed tools serve GraphRAG and the agent; only the agent has the requirements ledger
+   and the orchestrator."
+  Show the system status JSON (graph counts reconciled with the manifest).
+
+3:35–4:00  LIMITS AND NEXT
+  "Counts are complete only relative to the corpus; ambiguity is reported, not guessed; hidden answers are
+   exported raw with tokens and traces. For Round 2 the Fact vertices already carry provenance — adding
+   valid/knowledge time and SUPERSEDES edges turns today's conflict report into temporal reasoning."
+  End on the README results table.

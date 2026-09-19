@@ -145,6 +145,8 @@ def run(question: str) -> AnswerResult:
         res.explanation = data.get("explanation", "")
         llm_answer = clean_answer(data.get("answer", []))
         res.answer = machine_answer or llm_answer
+        if intent in ("count_events", "max_events") and graph_result is not None and cov.candidate_count == 0:
+            res.answer = []  # empty cohort: never fall back to a model guess
         res.interpretation["llm_answer"] = llm_answer
         res.citations = citations or build_citations(ctx, tb, data.get("cited_chunk_ids", []), chunks)
         cov.requirements = reqs

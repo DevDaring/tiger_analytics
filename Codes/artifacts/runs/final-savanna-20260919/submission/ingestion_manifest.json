@@ -1,0 +1,32 @@
+{
+ "corpus_path": "/home/Debz/Hackathon/Agentic_GraphRAG/Codes/Dataset/hackathon-resources/corpus/corpus.jsonl",
+ "corpus_sha256": "27aef30bbe32474df782f5164262d5d765af14efc9f0288320486cee585e191a",
+ "parser_version": "parser-v3",
+ "chunker_version": "chunker-v2",
+ "extraction_version": "extract-v3",
+ "graph_snapshot_id": "podium-27aef30b-parser-v3-chunker-v2",
+ "documents": 2951,
+ "chunks": 17904,
+ "events": 2210,
+ "facts": 23178,
+ "entities": 5950,
+ "venues": 314,
+ "editions": 20,
+ "sports": 47,
+ "prev_links": 1519,
+ "prev_links_by_source": {
+  "infobox_prev": 1511,
+  "derived_edition_order": 8
+ },
+ "stats": {
+  "chunks": 17904,
+  "event_docs": 2210,
+  "competitors_ok": 2134,
+  "non_event_docs": 741,
+  "competitors_missing": 56,
+  "competitors_unit": 19,
+  "competitors_suspicious": 1
+ },
+ "built_at": "2026-09-19T14:07:21Z",
+ "build_seconds": 2.6
+}

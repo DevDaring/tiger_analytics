@@ -15,15 +15,83 @@ Podium answers questions over a frozen corpus (2,951 Wikipedia-derived articles,
 The tables below are produced by `scripts/render_results.py` from the frozen run artifacts in `Codes/artifacts/runs/<run_id>/` (predictions, per-question scores, summary and config snapshot are all committed).
 
 <!-- RESULTS:BEGIN -->
-_The final frozen results table is inserted here by `scripts/render_results.py` (see section 8 for the run id)._
+Frozen run **`final-savanna-20260919`** on TigerGraph Savanna 4.2.5 (TG-00 workspace); answer model `gpt-4.1`, judge `gemini-2.5-flash`, embeddings `text-embedding-3-small`. Artifacts: `Codes/artifacts/runs/final-savanna-20260919/` (submission package in `submission/`).
+
+### public set — run `final-savanna-20260919`
+
+| Pipeline | n | Exact match | Judge correct | Judge completeness | Evidence support | Citations valid | Mean tokens | Mean context tok | LLM calls | p50 latency | p95 latency | Steps | Strategy changes | Abstained |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **RAG** | 100 | 51.0% | 57.0% | 0.7 | 0.8 | 100.0% | 2642.7 | 1579.4 | 1 | 1.6s | 2.3s | 2 | 0.0% | 17 |
+| **GraphRAG** | 100 | 99.0% | 99.0% | 1.0 | 0.9 | 100.0% | 1750.7 | 223.1 | 2 | 1.9s | 2.4s | 4.5 | 0.0% | 0 |
+| **Agentic GraphRAG** | 100 | 99.0% | 99.0% | 1.0 | 0.9 | 100.0% | 3605.0 | 286.8 | 4.0 | 4.5s | 7.0s | 6.6 | 3.0% | 0 |
+| **Fixed-plan control** | 100 | 99.0% | 100.0% | 1.0 | 0.9 | 100.0% | 1753.6 | 225.9 | 2 | 1.9s | 2.4s | 4.5 | 0.0% | 0 |
+
+**By question type** (exact match · mean tokens)
+
+| Type | n | RAG | GraphRAG | Agentic GraphRAG | Fixed-plan control |
+|---|---:|---:|---:|---:|---:|
+| aggregation | 21 | 4.8% · 2633.0 | 100.0% · 1928.5 | 100.0% · 3160.8 | 100.0% · 1933.0 |
+| lookup | 19 | 89.5% · 3087.1 | 100.0% · 1620.7 | 100.0% · 3341.6 | 100.0% · 1620.7 |
+| multi_hop | 28 | 39.3% · 2466.9 | 96.4% · 1723.0 | 96.4% · 3748.7 | 96.4% · 1729.2 |
+| superlative | 10 | 0.0% · 2487.4 | 100.0% · 1868.1 | 100.0% · 2861.2 | 100.0% · 1867.9 |
+| temporal | 22 | 100.0% · 2562.4 | 100.0% · 1675.1 | 100.0% · 4411.9 | 100.0% · 1676.2 |
+
+**Paired GraphRAG → Agentic GraphRAG** (n=100): quality lift 0.0 pp (bootstrap 95% CI [0.0, 0.0]), mean token delta 1854.3, extra tokens per extra correct answer: N/A. Agent wins: none; losses: none.
+
+Stop reasons (agentic): sufficient_evidence 99, ambiguous_entity 1
+
+### robustness set — run `final-savanna-20260919`
+
+| Pipeline | n | Exact match | Judge correct | Judge completeness | Evidence support | Citations valid | Mean tokens | Mean context tok | LLM calls | p50 latency | p95 latency | Steps | Strategy changes | Abstained |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **RAG** | 22 | 50.0% | 63.6% | 0.7 | 0.7 | 100.0% | 2878.8 | 1842.3 | 1 | 1.6s | 2.3s | 2 | 0.0% | 3 |
+| **GraphRAG** | 22 | 77.3% | 81.8% | 0.8 | 0.7 | 100.0% | 2809 | 1231.9 | 2 | 2.3s | 2.7s | 4.7 | 0.0% | 3 |
+| **Agentic GraphRAG** | 22 | 100.0% | 100.0% | 1.0 | 0.8 | 100.0% | 4995.3 | 891.6 | 5 | 5.3s | 7.9s | 8.4 | 36.4% | 3 |
+| **Fixed-plan control** | 22 | 86.4% | 86.4% | 0.9 | 0.8 | 100.0% | 2488.9 | 950.4 | 2 | 2.1s | 3.2s | 4.8 | 9.1% | 4 |
+
+**By question type** (exact match · mean tokens)
+
+| Type | n | RAG | GraphRAG | Agentic GraphRAG | Fixed-plan control |
+|---|---:|---:|---:|---:|---:|
+| ambiguous | 2 | 0.0% · 2469 | 100.0% · 1944 | 100.0% · 5592 | 100.0% · 1784.5 |
+| lookup_medal | 2 | 100.0% · 2354 | 100.0% · 1634 | 100.0% · 3361 | 100.0% · 1636.5 |
+| missing_field | 2 | 0.0% · 3405.5 | 0.0% · 1896.5 | 100.0% · 9567 | 0.0% · 1907.5 |
+| open_domain | 5 | 100.0% · 3332.2 | 100.0% · 5194 | 100.0% · 4549.4 | 100.0% · 4173.4 |
+| paraphrase | 5 | 40.0% · 2922.8 | 100.0% · 1728.4 | 100.0% · 3772.6 | 100.0% · 1732.8 |
+| unanswerable | 3 | 33.3% · 2985 | 33.3% · 3358.3 | 100.0% · 6419.3 | 100.0% · 2232.7 |
+| venue_variant | 3 | 33.3% · 2215.7 | 66.7% · 2054 | 100.0% · 3996 | 66.7% · 2623.3 |
+
+**Paired GraphRAG → Agentic GraphRAG** (n=22): quality lift 22.7 pp (bootstrap 95% CI [4.5, 40.9]), mean token delta 2186.3, extra tokens per extra correct answer: 9619.6. Agent wins: rob-006, rob-007, rob-011, rob-013, rob-015; losses: none.
+
+Stop reasons (agentic): sufficient_evidence 17, no_new_evidence 2, ambiguous_entity 2, budget_exhausted 1
+
+### hidden set — run `final-savanna-20260919`
+
+| Pipeline | n | Answered | Partial | Abstained | Errors | Mean tokens | Mean context tok | LLM calls | p50 latency | p95 latency | Steps | Strategy changes |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **RAG** | 50 | 46 | 0 | 4 | 0 | 2551.9 | 1506.1 | 1 | 1.5s | 2.5s | 2 | 0.0% |
+| **GraphRAG** | 50 | 48 | 2 | 0 | 0 | 1776.0 | 256.9 | 2 | 1.8s | 2.2s | 4.4 | 0.0% |
+| **Agentic GraphRAG** | 50 | 48 | 2 | 0 | 0 | 3333.0 | 271.6 | 3.7 | 4.2s | 6.1s | 6.2 | 2.0% |
+
+**By question type** (mean tokens · answered)
+
+| Type | n | RAG | GraphRAG | Agentic GraphRAG |
+|---|---:|---:|---:|---:|
+| aggregation | 15 | 2510.2 · 15 | 1898.5 · 14 | 2829.9 · 14 |
+| lookup | 7 | 3062.9 · 7 | 1607.9 · 7 | 3312.3 · 7 |
+| multi_hop | 10 | 2391.9 · 7 | 1757.2 · 9 | 3991 · 9 |
+| superlative | 10 | 2657.8 · 9 | 1809.9 · 10 | 2589.5 · 10 |
+| temporal | 8 | 2250.6 · 8 | 1674.4 · 8 | 4401 · 8 |
 <!-- RESULTS:END -->
 
 **What the numbers say**
 
-* **RAG** (top-8 similarity search over chunk vectors stored in TigerGraph) answers lookups and most temporal questions from the infobox chunk, but cannot enumerate a complete candidate set: it fails almost every aggregation and superlative question and many venue/date multi-hop questions.
-* **GraphRAG** (one interpretation, one fixed template of installed GSQL queries) is a strong baseline: full-cohort aggregates and edge traversals make it correct on ~96% of the public set at the *lowest* token cost of the three.
-* **Agentic GraphRAG** uses the same tools but decides its next action from the evidence gaps. On the public set it recovers the cases GraphRAG cannot: missing infobox values (recovered from prose with a verbatim, character-checked quote), implausible infobox values (verified against the prose and reported as an explicit conflict), unresolved event names (substring / semantic fallback), and venue spellings that differ from the corpus. It costs roughly 2× the tokens of GraphRAG. Where GraphRAG already has complete coverage, the agent stops after one graph query — the *fixed-plan control* shows that the gain comes from adaptation, not from a different planner.
-* The supplemental **robustness set** (22 labelled questions: paraphrases, missing fields, ambiguity, venue variants, unanswerable, open-domain) is where adaptation matters most; it is reported separately and never mixed with the official numbers.
+* **RAG** (top-8 similarity search over chunk vectors stored in TigerGraph) answers lookups and temporal questions from the infobox chunk, but cannot enumerate a complete candidate set: it fails almost every aggregation and superlative question and most venue/date multi-hop questions (51% overall).
+* **GraphRAG** (one interpretation, one fixed template of installed GSQL queries) is a strong baseline: full-cohort aggregates and edge traversals make it correct on 99% of the public set at the *lowest* token cost (≈1,750 tokens/answer). The single miss is a genuinely ambiguous question (two events share the venue *and* the date string; both medallists are listed).
+* **Agentic GraphRAG** reaches the same 99% on the public set at ≈2× the tokens. On this benchmark the paired lift is **0.0 pp** — we report that honestly: when the graph already has complete coverage, the agent stops after one graph query, and the *fixed-plan control* (same planner, no replanning) matches it. The public set simply contains almost no evidence gaps.
+* The **robustness set** (22 labelled questions kept separate from the official numbers) is where adaptation pays: **Agentic 100% vs GraphRAG 77% vs fixed-plan 86% vs RAG 50%**, with strategy changes on 36% of questions — missing infobox values recovered from prose with verbatim, character-checked quotes; venue spellings that differ from the corpus; correct abstention on unanswerable questions; entity questions outside the Olympic domain.
+* Hidden set: 150 raw predictions with tokens and traces (no accuracy claim); GraphRAG and the agent agree on 50/50 questions, two of which are reported as bounded/ambiguous.
+* A second complete frozen run on TigerGraph Community Edition with `claude-sonnet-5` as the answer model (`final-ce-20260919`) gives the same picture (public 47 / 99 / 99 %, robustness 59 / 86 / 100 %), so the result is not tied to one model.
 
 ---
 
@@ -111,7 +179,7 @@ make dashboard                  # http://127.0.0.1:8120
 
 TigerGraph Community Edition works as a drop-in (`scripts/env_local.sh`), which is how the pipelines were developed before the frozen run on Savanna.
 
-Models (frozen, `configs/models.yaml`): answer/planning `claude-sonnet-5` (effort=low, structured JSON), judge `gpt-4.1`, embeddings `text-embedding-3-small` (1536). Any OpenAI-compatible or Anthropic model can be substituted via `PODIUM_ANSWER_MODEL`.
+Models (frozen, `configs/models.yaml`): answer/planning `gpt-4.1` (structured JSON output, one model for all pipelines), judge `gemini-2.5-flash` (different model family), embeddings `text-embedding-3-small` (1536). Development and the Community-Edition frozen run (`final-ce-20260919`) used `claude-sonnet-5` with `gpt-4.1` as judge; the Anthropic account ran out of credits before the Savanna run, so the headline run uses `gpt-4.1`. Both runs are committed, so the effect of the model swap is visible (it is small: the graph tools carry the factual load). Any OpenAI-compatible or Anthropic model can be substituted via `PODIUM_ANSWER_MODEL`.
 
 ---
 
@@ -154,5 +222,5 @@ Codes/
 
 ## 8. Artifacts and attribution
 
-* Frozen run id and the submission package: `Codes/artifacts/runs/<run_id>/submission/` (see the results section above for the id).
+* Frozen run id and the submission package: `Codes/artifacts/runs/<run_id>/submission/` (`final-savanna-20260919`).
 * Corpus text is derived from English Wikipedia (CC BY-SA 4.0); every citation carries the source URL. The TigerGraph GraphRAG starter repository was used as a reference for engine concepts; all code here is original. Third-party libraries: pyTigerGraph/httpx, Anthropic and OpenAI SDKs, FastAPI, Chart.js, vis-network.
