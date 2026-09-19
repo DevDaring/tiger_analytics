@@ -280,6 +280,8 @@ def date_match(question_date: str, field_date: str | None) -> tuple[int, str]:
     a, b = parse_dates(question_date), parse_dates(field_date)
     if a.years and b.years and not (a.years & b.years):
         return 0, "different year"
+    if a.days and b.days and a.days == b.days:
+        return 2, "same days"
     if a.days and b.days and (a.days & b.days):
         return 1, "day overlap"
     if not a.days and not b.days and a.months and b.months and (a.months & b.months):

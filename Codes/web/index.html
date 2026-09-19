@@ -304,7 +304,7 @@ function renderInspect(rec){
       <div style="min-width:260px"><div class="metrics" style="grid-template-columns:repeat(2,1fr)"><div class="metric"><div class="v">${fmt(r.usage.total_tokens)}</div><div class="l">tokens (${fmt(r.usage.input_tokens)} in / ${fmt(r.usage.output_tokens)} out)</div></div><div class="metric"><div class="v">${fmt(r.usage.context_tokens)}</div><div class="l">context tokens</div></div><div class="metric"><div class="v">${(r.latency_ms/1000).toFixed(1)}s</div><div class="l">latency</div></div><div class="metric"><div class="v">${r.usage.llm_calls}</div><div class="l">LLM calls · ${t.n_llm_decisions} decisions</div></div></div></div></div>
       <div class="stmt"><b>Stopped:</b> <span class="mono">${r.stop_reason}</span> — ${esc(STOP[r.stop_reason]||'')} ${t.stop_explanation?'('+esc(t.stop_explanation)+')':''}</div></div>
     <div class="grid2" style="margin-top:14px">
-      <div class="card"><h3>Evidence requirements</h3>${reqs}<h3 style="margin-top:14px">Interpretation</h3><div class="mono muted" style="font-size:12px">${esc(JSON.stringify(r.interpretation))}</div></div>
+      <div class="card"><h3>Evidence requirements</h3>${reqs}<h3 style="margin-top:14px">Interpretation</h3><div class="mono muted" style="font-size:12px;word-break:break-all">${esc(JSON.stringify(r.interpretation))}</div></div>
       <div class="card"><h3>Citations (click to open the source span)</h3>${cites}</div>
     </div>
     ${cands}

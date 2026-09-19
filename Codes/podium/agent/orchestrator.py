@@ -124,8 +124,15 @@ class Agent:
             action, args = choice["action"], choice.get("arguments") or {}
             if action in ("finish", "abstain"):
                 if action == "abstain":
-                    st.notes.append("orchestrator abstained: " + str(args.get("reason", "")))
-                    return "no_evidence", str(args.get("reason", "orchestrator abstained"))
+                    if tool_calls == 0 and gaps:
+                        # never abstain before looking: take the top suggestion instead
+                        st.notes.append("abstain before retrieval blocked; executing top suggestion")
+                        choice = {**gaps[0]["suggested_actions"][0], "rationale": "guard: retrieve before abstaining"}
+                        action, args = choice["action"], choice["arguments"]
+                    else:
+                        st.notes.append("orchestrator abstained: " + str(args.get("reason", "")))
+                        return "no_evidence", str(args.get("reason", "orchestrator abstained"))
+            if action == "finish":
                 if st.intent == "open_question":
                     st.verified = True  # generation + verification happens in synthesis
                     return "sufficient_evidence", str(args.get("reason", "orchestrator finished"))
@@ -182,7 +189,7 @@ class Agent:
         try:
             data, u = complete_json("decide", DECIDE_SYSTEM, "\n\n".join(parts), DECISION_SCHEMA, max_tokens=400, effort="low")
             ctx.add_usage(u)
-            data["arguments"] = {k: v for k, v in (data.get("arguments") or {}).items() if v not in ("", None)}
+            data["arguments"] = {k: v for k, v in (data.get("arguments") or {}).items() if v not in ("", None, 0, False, [])}
             tb._record("orchestrator", "decide", "llm", {"action": data.get("action")}, f"{data.get('action')} {json.dumps(data.get('arguments'), ensure_ascii=False)[:120]}", 1, t0, tokens=u.total, rationale=data.get("rationale", ""))
             return data
         except Exception as e:  # noqa: BLE001
@@ -312,8 +319,10 @@ class Agent:
                 st.chunks.extend(c for c in ch if c["chunk_id"] not in {x["chunk_id"] for x in st.chunks})
                 if strategy_change:
                     ctx.trace.events[-1].strategy_change = True
-                # semantic evidence may identify events for structured intents
+                # semantic evidence may identify events for structured intents (venue must still be compatible)
                 if st.intent == "event_by_venue_date" and not st.events:
+                    from ..tools.toolbox import venue_compatible
+
                     evs = []
                     for c in ch:
                         did = c["doc_id"]
@@ -324,6 +333,7 @@ class Agent:
                             if fr["event"]:
                                 st.facts_for[did] = fr
                                 evs.append(fr["event"])
+                    evs = [e for e in evs if venue_compatible(p.get("venue", ""), e.get("venue_id", ""))]
                     if evs:
                         st.events = evs
                         st.date_match = None
@@ -473,7 +483,9 @@ class Agent:
         if i == "count_events" and st.aggregate:
             r = st.aggregate
             graph_result = {k: v for k, v in r.items() if k != "manifest"} | {"manifest": [c.model_dump() for c in r["manifest"]]}
-            machine = [str(r["count"])]
+            machine = [str(r["count"])] if r["n_candidates"] > 0 else []
+            if r["n_candidates"] == 0:
+                cov.notes.append(f"the corpus contains no {r['sport'] or 'matching'} events for the {r['year']} {r['season']} Olympics; no count can be given")
             cov.candidate_scope = f"{r['sport']} events at the {r['year']} {r['season']} Olympics (corpus-defined)"
             cov.candidate_count, cov.unknown_values = r["n_candidates"], r["n_unknown"]
             cov.known_values = r["n_candidates"] - r["n_unknown"]

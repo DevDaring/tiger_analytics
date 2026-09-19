@@ -88,7 +88,7 @@ def assess(st: InvestigationState) -> list[dict[str, Any]]:
             gap("R1", {"action": "disambiguate", "arguments": {"hint": "choose the event whose title matches the question wording"}, "why": "several candidates; pick by wording or abstain as ambiguous"})
         if i == "lookup_field":
             fld = p.get("field") or "nations"
-            ok = n == 1 and _has_fact(st, st.events[0]["event_id"], fld)
+            ok = n == 1 and _has_fact(st, st.events[0]["event_id"], fld.replace("_noc", ""))
             R["R2"].status = "satisfied" if ok else "missing"
             if n == 1 and not ok:
                 if st.facts_for.get(st.events[0]["event_id"]):

@@ -19,7 +19,7 @@ SCHEMA = {
         "event_name": {"type": "string", "description": "event name as it would appear after the dash in a title, e.g. \"Men's 20 kilometres walk\"; empty if none"},
         "venue": {"type": "string", "description": "venue string exactly as written in the question, or empty"},
         "date": {"type": "string", "description": "date string exactly as written in the question, or empty"},
-        "field": {"type": "string", "enum": ["nations", "competitors", "gold", "silver", "bronze", "venue", "date", "win_value", ""]},
+        "field": {"type": "string", "enum": ["nations", "competitors", "gold", "silver", "bronze", "gold_noc", "silver_noc", "bronze_noc", "venue", "date", "win_value", ""]},
         "threshold": {"type": "integer", "description": "numeric threshold for count questions (0 if none)"},
         "operator": {"type": "string", "enum": [">", ">=", "<", "<=", "==", ""]},
         "temporal_relation": {"type": "string", "enum": ["previous_edition", "next_edition", "same", ""]},
@@ -34,7 +34,8 @@ SYSTEM = """You interpret questions about a frozen corpus of Wikipedia articles 
 Map the question to ONE intent and fill the slots literally from the question. Do not answer the question.
 
 Intents:
-- lookup_field: a single field of one named event (e.g. 'How many nations competed in <title>?' -> field=nations).
+- lookup_field: a single field of one named event (e.g. 'How many nations competed in <title>?' -> field=nations;
+  'who won silver in <title>' -> field=silver; 'which NOC/country did the gold medallist represent' -> field=gold_noc).
 - count_events: 'how many <sport> events at the <year> <season> Olympics had more than N competitors' -> threshold, operator.
 - max_events: 'which <sport> event at the <year> <season> Olympics had the highest number of competitors'.
 - event_by_venue_date: 'who won the gold medal in the event held at <venue> on <date> [at the <year> <season> Olympics]' -> venue, date, field=gold.

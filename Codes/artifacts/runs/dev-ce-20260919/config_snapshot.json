@@ -12,14 +12,13 @@
  "config_hash": "2a866c9561f74572",
  "corpus_hash": "27aef30bbe32474df782f5164262d5d765af14efc9f0288320486cee585e191a",
  "graph_snapshot_id": "podium-27aef30b-parser-v3-chunker-v2",
- "code_commit": "uncommitted",
+ "code_commit": "65c840f",
  "run_id": "dev-ce-20260919",
- "split": "robustness",
+ "split": "hidden",
  "pipelines": [
   "rag",
   "graphrag",
-  "agentic_graphrag",
-  "fixed_plan"
+  "agentic_graphrag"
  ],
- "started_at": "2026-09-19T14:07:33Z"
+ "started_at": "2026-09-19T14:10:25Z"
 }

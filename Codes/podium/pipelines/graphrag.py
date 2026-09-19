@@ -37,7 +37,7 @@ def run(question: str) -> AnswerResult:
         if intent == "count_events" and interp.get("sport") and interp.get("year"):
             agg = tb.aggregate_competitors(interp["sport"], interp["year"], interp.get("season") or "", interp.get("threshold", 0), interp.get("operator") or ">", rationale="fixed template: complete-cohort aggregate")
             graph_result = {k: v for k, v in agg.items() if k != "manifest"} | {"manifest": [c.model_dump() for c in agg["manifest"]]}
-            machine_answer = [str(agg["count"])]
+            machine_answer = [str(agg["count"])] if agg["n_candidates"] > 0 else []
             cov = CoverageReport(candidate_scope=f"{agg['sport']} events at the {agg['year']} {agg['season']} Olympics (corpus-defined)", candidate_count=agg["n_candidates"], known_values=agg["n_candidates"] - agg["n_unknown"], unknown_values=agg["n_unknown"], candidates=agg["manifest"], complete=agg["n_unknown"] == 0)
             if agg["n_unknown"]:
                 cov.bounds = {"lower": agg["count"], "upper": agg["count"] + agg["n_unknown"]}

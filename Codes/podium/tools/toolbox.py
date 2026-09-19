@@ -7,6 +7,7 @@ used by GraphRAG (fixed plan) and by the agent (adaptive plan) so the comparison
 from __future__ import annotations
 
 import json
+import math
 import re
 import time
 from functools import lru_cache
@@ -173,19 +174,21 @@ class Toolbox:
         events = [self.ctx.add_event(vattrs(v)) for v in res.get("events", [])]
         venues = [{"venue_id": vid, "name": venue, "match": "exact"}] if events else []
         if not events and fuzzy:
-            toks = [t for t in re.findall(r"[a-z0-9]+", norm_text(venue)) if len(t) >= 4 and t not in ("olympic", "centre", "center", "arena", "stadium", "hall", "park", "the")]
+            all_toks = [t for t in re.findall(r"[a-z0-9]+", norm_text(venue)) if len(t) >= 4 and t != "the"]
+            toks = [t for t in all_toks if t not in ("olympic", "centre", "center", "arena", "stadium", "hall", "park")]
             toks.sort(key=len, reverse=True)
             seen = {}
             for tok in toks[:3]:
                 vres = results_by_name(self.tg.run_query("venues_like", {"needle": tok, "year": 0}))
                 for v in vres.get("venues", []):
                     va = vattrs(v)
-                    score = sum(1 for t in toks if t in va["venue_id"])
+                    score = sum(1 for t in all_toks if t in va["venue_id"])
                     if va["venue_id"] not in seen or seen[va["venue_id"]]["score"] < score:
                         seen[va["venue_id"]] = {"venue_id": va["venue_id"], "name": va["name"], "score": score, "match": f"token:{tok}"}
             ranked = sorted(seen.values(), key=lambda x: -x["score"])
             top = ranked[0]["score"] if ranked else 0
-            venues = [v for v in ranked if v["score"] == top][:5]
+            # accept only when most of the question's significant tokens are present in the venue key
+            venues = [v for v in ranked if v["score"] == top and top >= max(1, math.ceil(len(all_toks) * 0.6))][:5]
             for v in venues:
                 r2 = results_by_name(self.tg.run_query("events_at_venue", {"venue_id": v["venue_id"], "year": int(year or 0)}))
                 for x in r2.get("events", []):
@@ -370,6 +373,14 @@ class Toolbox:
 
     def citation_for_chunk(self, chunk: dict, claim_id: str = "", quote: str = "") -> Citation:
         return Citation(doc_id=chunk["doc_id"], chunk_id=chunk["chunk_id"], title=chunk.get("title", ""), url=chunk.get("url", ""), char_start=chunk.get("char_start"), char_end=chunk.get("char_end"), quote=(quote or chunk.get("text", ""))[:300], claim_ids=[claim_id] if claim_id else [], source="vector")
+
+
+def venue_compatible(question_venue: str, venue_id: str) -> bool:
+    """True when most significant tokens of the question's venue appear in the venue key."""
+    toks = [t for t in re.findall(r"[a-z0-9]+", norm_text(question_venue)) if len(t) >= 4 and t != "the"]
+    if not toks:
+        return True
+    return sum(1 for t in toks if t in (venue_id or "")) >= max(1, math.ceil(len(toks) * 0.6))
 
 
 def medallist_display(raw: str) -> str:
