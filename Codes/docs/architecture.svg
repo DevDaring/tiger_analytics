@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="14">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker>
+    <marker id="arrg" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#199e70"/></marker>
+  </defs>
+  <rect width="1400" height="820" fill="#fcfcfb"/>
+  <text x="40" y="44" font-size="24" font-weight="700" fill="#0b0b0b">Podium — Evidence-Driven Agentic GraphRAG on TigerGraph</text>
+  <text x="40" y="68" fill="#52514e">Corpus → TigerGraph (graph + vectors) → three pipelines with the same tools → evidence report → offline evaluation</text>
+
+  <!-- Ingestion column -->
+  <rect x="40" y="100" width="300" height="300" rx="12" fill="#f0efec" stroke="#d6d5d0"/>
+  <text x="56" y="126" font-weight="700" fill="#0b0b0b">Offline ingestion (versioned, reproducible)</text>
+  <rect x="56" y="140" width="268" height="50" rx="8" fill="#fff" stroke="#c9c8c2"/>
+  <text x="68" y="161" font-weight="600">Immutable corpus</text><text x="68" y="180" fill="#52514e">2,951 docs · SHA-256 · CC BY-SA</text>
+  <rect x="56" y="204" width="268" height="60" rx="8" fill="#fff" stroke="#c9c8c2"/>
+  <text x="68" y="225" font-weight="600">Deterministic parser</text><text x="68" y="244" fill="#52514e">titles · infoboxes · counts+units · dates ·</text><text x="68" y="258" fill="#52514e">venues · medallists · prev/next (char offsets)</text>
+  <rect x="56" y="278" width="268" height="50" rx="8" fill="#fff" stroke="#c9c8c2"/>
+  <text x="68" y="299" font-weight="600">Structure-aware chunks</text><text x="68" y="318" fill="#52514e">17,904 chunks · text-embedding-3-small (1536)</text>
+  <rect x="56" y="342" width="268" height="44" rx="8" fill="#fff" stroke="#c9c8c2"/>
+  <text x="68" y="362" font-weight="600">Ingestion manifest</text><text x="68" y="379" fill="#52514e">graph snapshot id · counts reconciled</text>
+  <line x1="190" y1="190" x2="190" y2="204" stroke="#555" marker-end="url(#arr)"/>
+  <line x1="190" y1="264" x2="190" y2="278" stroke="#555" marker-end="url(#arr)"/>
+  <line x1="190" y1="328" x2="190" y2="342" stroke="#555" marker-end="url(#arr)"/>
+
+  <!-- TigerGraph -->
+  <rect x="380" y="100" width="340" height="300" rx="12" fill="#fff4ea" stroke="#eb6834" stroke-width="2"/>
+  <text x="396" y="126" font-weight="700" fill="#0b0b0b">TigerGraph Savanna 4.2 — graph Podium</text>
+  <text x="396" y="150" font-family="JetBrains Mono, Menlo, monospace" font-size="12" fill="#333">
+    <tspan x="396" dy="0">Document —HAS_CHUNK→ Chunk(embedding VECTOR)</tspan>
+    <tspan x="396" dy="18">Document —DESCRIBES_EVENT→ Event —IN_EDITION→ Edition</tspan>
+    <tspan x="396" dy="18">Edition —PREVIOUS_EDITION→ Edition</tspan>
+    <tspan x="396" dy="18">Event —IN_SPORT→ Sport · Event —AT_VENUE→ Venue</tspan>
+    <tspan x="396" dy="18">Event —HAS_FACT→ Fact —SUPPORTED_BY→ Chunk (span)</tspan>
+    <tspan x="396" dy="18">Entity —WON_MEDAL{medal,noc}→ Event</tspan>
+    <tspan x="396" dy="18">Event —PREVIOUS_EVENT{source}→ Event</tspan>
+  </text>
+  <rect x="396" y="290" width="308" height="96" rx="8" fill="#fff" stroke="#e8b89a"/>
+  <text x="408" y="310" font-weight="600">16 installed GSQL queries (read-only)</text>
+  <text x="408" y="328" fill="#52514e" font-size="12">vectorSearch · scoped vectorSearch · find_events</text>
+  <text x="408" y="344" fill="#52514e" font-size="12">aggregate_competitors · max_competitors · previous_event</text>
+  <text x="408" y="360" fill="#52514e" font-size="12">events_at_venue · event_facts · resolve_entity · subgraph</text>
+  <text x="408" y="376" fill="#52514e" font-size="12">complete cohort + included / excluded / unknown manifest</text>
+  <line x1="340" y1="250" x2="380" y2="250" stroke="#555" marker-end="url(#arr)"/>
+
+  <!-- Tools -->
+  <rect x="760" y="100" width="600" height="120" rx="12" fill="#eef4fb" stroke="#2a78d6"/>
+  <text x="776" y="126" font-weight="700">Shared typed tool layer (same tools for GraphRAG and the agent)</text>
+  <text x="776" y="150" fill="#333" font-size="13">search_chunks · find_events · events_at_venue (+fuzzy) · match_date · aggregate · superlative</text>
+  <text x="776" y="170" fill="#333" font-size="13">previous_event · event_facts (spans) · fetch_document · resolve_entity · extract_count_from_prose (LLM, quote-verified)</text>
+  <text x="776" y="196" fill="#52514e" font-size="12">every call is traced: specialist · tool · execution_kind (graph_query | vector_search | deterministic | llm) · args · latency · tokens</text>
+  <line x1="720" y1="160" x2="760" y2="160" stroke="#555" marker-end="url(#arr)"/>
+
+  <!-- Pipelines -->
+  <rect x="760" y="250" width="180" height="150" rx="12" fill="#fff" stroke="#2a78d6" stroke-width="2"/>
+  <text x="776" y="276" font-weight="700" fill="#2a78d6">RAG</text>
+  <text x="776" y="298" font-size="12" fill="#333">question → top-k vectorSearch</text>
+  <text x="776" y="316" font-size="12" fill="#333">→ grounded answer</text>
+  <text x="776" y="344" font-size="12" fill="#52514e">no graph traversal</text>
+  <text x="776" y="360" font-size="12" fill="#52514e">no complete-set counting</text>
+  <text x="776" y="376" font-size="12" fill="#52514e">no second retrieval</text>
+
+  <rect x="960" y="250" width="180" height="150" rx="12" fill="#fff" stroke="#eb6834" stroke-width="2"/>
+  <text x="976" y="276" font-weight="700" fill="#eb6834">GraphRAG</text>
+  <text x="976" y="298" font-size="12" fill="#333">interpret once (LLM)</text>
+  <text x="976" y="316" font-size="12" fill="#333">→ one fixed template of</text>
+  <text x="976" y="332" font-size="12" fill="#333">graph queries → answer</text>
+  <text x="976" y="360" font-size="12" fill="#52514e">cohort aggregates, edges,</text>
+  <text x="976" y="376" font-size="12" fill="#52514e">spans — but no replanning</text>
+
+  <rect x="1160" y="250" width="200" height="150" rx="12" fill="#fff" stroke="#199e70" stroke-width="2"/>
+  <text x="1176" y="276" font-weight="700" fill="#199e70">Agentic GraphRAG</text>
+  <text x="1176" y="298" font-size="12" fill="#333">requirements ledger →</text>
+  <text x="1176" y="316" font-size="12" fill="#333">coverage check (deterministic)</text>
+  <text x="1176" y="332" font-size="12" fill="#333">→ orchestrator picks next</text>
+  <text x="1176" y="348" font-size="12" fill="#333">specialist action (LLM)</text>
+  <text x="1176" y="366" font-size="12" fill="#52514e">repair · fuzzy · disambiguate</text>
+  <text x="1176" y="382" font-size="12" fill="#52514e">budgets · stop reasons</text>
+
+  <line x1="850" y1="220" x2="850" y2="250" stroke="#555" marker-end="url(#arr)"/>
+  <line x1="1050" y1="220" x2="1050" y2="250" stroke="#555" marker-end="url(#arr)"/>
+  <line x1="1260" y1="220" x2="1260" y2="250" stroke="#555" marker-end="url(#arr)"/>
+
+  <!-- Agent loop detail -->
+  <rect x="760" y="430" width="600" height="150" rx="12" fill="#eefaf4" stroke="#199e70"/>
+  <text x="776" y="456" font-weight="700" fill="#0b0b0b">Coverage-directed investigation loop (agent)</text>
+  <text x="776" y="480" font-size="13" fill="#333">interpret → build evidence requirements (e.g. "predicate known for every candidate", "exactly one event matches venue+date")</text>
+  <text x="776" y="500" font-size="13" fill="#333">while budget: assess gaps → orchestrator chooses action → execute tool → update ledger → verify</text>
+  <text x="776" y="520" font-size="13" fill="#333">specialists: entity_linker · graph_traverser · similarity_search · document_retriever · aggregator · multi_hop_reasoner · evidence_evaluator</text>
+  <text x="776" y="544" font-size="13" fill="#333">stop: sufficient_evidence · ambiguous_entity · incomplete_scope · no_new_evidence · budget_exhausted · no_evidence</text>
+  <text x="776" y="566" font-size="12" fill="#52514e">controls: fixed-plan (no replanning) · no-coverage (no ledger) — isolate the value of adaptation</text>
+  <line x1="1260" y1="400" x2="1260" y2="430" stroke="#199e70" marker-end="url(#arrg)"/>
+
+  <!-- Outputs -->
+  <rect x="40" y="430" width="680" height="150" rx="12" fill="#f0efec" stroke="#d6d5d0"/>
+  <text x="56" y="456" font-weight="700">AnswerResult (same contract for every pipeline)</text>
+  <text x="56" y="480" font-size="13" fill="#333">answer[] · explanation · status · citations (doc, chunk, char offsets, quote) · coverage report</text>
+  <text x="56" y="500" font-size="13" fill="#333">(requirements, candidate manifest with included/excluded/unknown, bounds) · trace · usage · latency · stop reason</text>
+  <text x="56" y="530" font-size="13" fill="#333">Usage: context tokens ⊂ input tokens; input + output = total; embeddings separate; failed calls = usage_unknown</text>
+  <text x="56" y="556" font-size="12" fill="#52514e">Machine answers for graph-computed results are enforced deterministically; the model writes the grounded explanation.</text>
+  <line x1="760" y1="500" x2="720" y2="500" stroke="#555" marker-end="url(#arr)"/>
+
+  <!-- Evaluation -->
+  <rect x="40" y="610" width="1320" height="170" rx="12" fill="#fff" stroke="#c9c8c2"/>
+  <text x="56" y="636" font-weight="700">Benchmark runner → offline evaluator → dashboard (https://tigeranalytics.duckdns.org)</text>
+  <text x="56" y="660" font-size="13" fill="#333">Inference boundary: only question text enters a pipeline; qid / qtype / gold answers are attached by the runner afterwards. Gold answers are read only by the scorer.</text>
+  <text x="56" y="682" font-size="13" fill="#333">Metrics: exact / numeric match (versioned normalisation) · blind LLM judge from another model family (correctness, completeness, evidence support) · citation validity</text>
+  <text x="56" y="702" font-size="13" fill="#333">against the frozen corpus · gold-document recall · tokens (context / input / output / total) · latency p50/p95 · steps · retrieval methods · strategy changes · stop reasons</text>
+  <text x="56" y="726" font-size="13" fill="#333">Splits: 100 public (scored) · 50 hidden (raw outputs, unscored) · 22 labelled robustness questions (paraphrase, missing field, ambiguity, venue variants, unanswerable, open domain)</text>
+  <text x="56" y="750" font-size="13" fill="#333">Paired GraphRAG → Agentic comparison with bootstrap CI · fixed-plan ablation · per-type accuracy vs tokens · failure explorer · trace timeline · source-span viewer · graph path</text>
+  <text x="56" y="772" font-size="12" fill="#52514e">Artifacts: predictions_{public,hidden}.jsonl · scores · summary · config snapshot (model ids, hashes, graph snapshot id, code commit)</text>
+</svg>

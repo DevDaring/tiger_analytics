@@ -1,0 +1,20 @@
+# secrets and environments
+Codes/.env
+Codes/.env.*
+!Codes/.env.example
+Codes/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+# markdown is kept out of the repository except the root README
+*.md
+!/README.md
+# large / regenerable data
+Codes/Dataset/*.zip
+Codes/Dataset/hackathon-resources/corpus/
+Codes/artifacts/cache/
+Codes/artifacts/runs/live/
+Codes/scripts/env_active.sh
+Codes/scripts/env_local.sh
+*.log

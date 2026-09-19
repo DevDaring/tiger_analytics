@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Podium — Evidence-Driven Agentic GraphRAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.js"></script>
+<style>
+:root{
+  color-scheme:dark;
+  --surface-0:#111110; --surface-1:#1a1a19; --surface-2:#232322; --surface-3:#2c2c2a; --line:#383835;
+  --text-1:#ffffff; --text-2:#c3c2b7; --text-3:#8d8c84;
+  --rag:#3987e5; --graphrag:#d95926; --agentic:#199e70; --fixed:#c98500; --nocov:#9085e9;
+  --good:#199e70; --warn:#c98500; --bad:#e66767; --info:#3987e5;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--surface-0);color:var(--text-1);font-family:var(--sans);font-size:14px;line-height:1.45}
+a{color:var(--info)}
+header{position:sticky;top:0;z-index:20;background:rgba(17,17,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:0 24px;display:flex;align-items:center;gap:24px;height:56px}
+header .brand{font-weight:700;letter-spacing:.2px;display:flex;align-items:center;gap:10px}
+header .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--rag),var(--agentic))}
+header nav{display:flex;gap:4px}
+header nav button{background:none;border:0;color:var(--text-2);padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}
+header nav button.active{background:var(--surface-2);color:var(--text-1)}
+header .status{margin-left:auto;font-size:12px;color:var(--text-3);display:flex;gap:14px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:500;border:1px solid var(--line);background:var(--surface-2);color:var(--text-2)}
+.pill.ok{border-color:rgba(25,158,112,.5);color:#5fd3a6}
+.pill.bad{border-color:rgba(230,103,103,.5);color:#f09a9a}
+.pill.warn{border-color:rgba(201,133,0,.5);color:#f0b84a}
+main{max-width:1440px;margin:0 auto;padding:24px}
+section.screen{display:none}
+section.screen.active{display:block}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:16px;margin:24px 0 10px;color:var(--text-1)}
+h3{font-size:13px;margin:0 0 8px;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.sub{color:var(--text-2);margin:0 0 18px}
+.card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+input[type=text],select,textarea{background:var(--surface-2);border:1px solid var(--line);color:var(--text-1);border-radius:8px;padding:10px 12px;font:inherit;width:100%}
+button.primary{background:var(--text-1);color:#111;border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+button.secondary{background:var(--surface-2);color:var(--text-1);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font:inherit;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+.ask{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center}
+.examples{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.examples button{background:var(--surface-2);border:1px solid var(--line);color:var(--text-2);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer}
+.examples button:hover{color:var(--text-1)}
+.pcard{border-top:3px solid var(--line);position:relative}
+.pcard.rag{border-top-color:var(--rag)} .pcard.graphrag{border-top-color:var(--graphrag)} .pcard.agentic_graphrag{border-top-color:var(--agentic)} .pcard.fixed_plan{border-top-color:var(--fixed)} .pcard.agentic_nocov{border-top-color:var(--nocov)}
+.pcard .name{font-weight:600;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.answer{font-size:20px;font-weight:600;margin:6px 0 8px;word-break:break-word}
+.answer.empty{color:var(--text-3);font-weight:400;font-style:italic}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.metric{background:var(--surface-2);border-radius:8px;padding:8px}
+.metric .v{font-family:var(--mono);font-size:15px;font-weight:500}
+.metric .l{font-size:11px;color:var(--text-3)}
+.expl{color:var(--text-2);font-size:13px;max-height:120px;overflow:auto}
+.cites{margin-top:8px;font-size:12px;color:var(--text-3)}
+.stmt{background:var(--surface-2);border-left:3px solid var(--info);padding:10px 14px;border-radius:8px;color:var(--text-2);margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--text-3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;white-space:nowrap}
+tr:hover td{background:rgba(255,255,255,.02)}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+.tablewrap{overflow-x:auto}
+.timeline{display:flex;flex-direction:column;gap:6px}
+.step{display:grid;grid-template-columns:34px 150px 1fr 110px;gap:10px;padding:10px 12px;background:var(--surface-2);border-radius:8px;border:1px solid transparent;align-items:start}
+.step.change{border-color:rgba(201,133,0,.6)}
+.step .n{font-family:var(--mono);color:var(--text-3)}
+.step .who{font-weight:500}
+.step .who small{display:block;color:var(--text-3);font-weight:400;font-family:var(--mono);font-size:11px}
+.step .what{color:var(--text-2);font-size:13px}
+.step .what .args{font-family:var(--mono);font-size:11px;color:var(--text-3);word-break:break-all}
+.step .meta{font-family:var(--mono);font-size:11px;color:var(--text-3);text-align:right}
+.kind{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-family:var(--mono);margin-right:6px;border:1px solid var(--line)}
+.kind.graph_query{color:#f0b84a} .kind.vector_search{color:#7fb3f2} .kind.llm{color:#c9a8ff} .kind.deterministic{color:#9fd8bf}
+.req{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+.req .st{width:96px;flex:none}
+.st.satisfied{color:#5fd3a6} .st.missing{color:#f09a9a} .st.conflicting{color:#f0b84a} .st.unresolvable{color:#f0b84a}
+.cand.included td:first-child{border-left:3px solid var(--good)} .cand.excluded td:first-child{border-left:3px solid var(--line)} .cand.unknown td:first-child{border-left:3px solid var(--warn)}
+.src{font-family:var(--mono);font-size:12px;white-space:pre-wrap;background:var(--surface-2);border-radius:8px;padding:12px;max-height:420px;overflow:auto;line-height:1.5}
+.src mark{background:rgba(25,158,112,.35);color:#fff;border-radius:2px;padding:0 1px}
+.cite{padding:8px 10px;background:var(--surface-2);border-radius:8px;margin-bottom:6px;cursor:pointer;border:1px solid transparent}
+.cite:hover{border-color:var(--line)}
+.cite .t{font-weight:500}
+.cite .q{font-family:var(--mono);font-size:12px;color:var(--text-2);margin-top:3px}
+#graph{height:360px;background:var(--surface-2);border-radius:8px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--text-2);flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.chart{height:300px;position:relative}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tile{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:14px}
+.tile .v{font-size:26px;font-weight:700;font-family:var(--mono)}
+.tile .l{font-size:12px;color:var(--text-3)}
+.tile .d{font-size:12px;color:var(--text-2);margin-top:4px}
+.muted{color:var(--text-3)}
+.mono{font-family:var(--mono)}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--text-1);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tabs{display:flex;gap:4px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;color:var(--text-3);padding:8px 12px;font:inherit;cursor:pointer;border-bottom:2px solid transparent}
+.tabs button.active{color:var(--text-1);border-bottom-color:var(--text-1)}
+.tabpane{display:none}.tabpane.active{display:block}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar select{width:auto;min-width:160px}
+.ok{color:#5fd3a6}.bad{color:#f09a9a}.warn{color:#f0b84a}
+footer{color:var(--text-3);font-size:12px;padding:30px 0;text-align:center}
+@media (max-width:700px){.ask{grid-template-columns:1fr}.step{grid-template-columns:30px 1fr;} .step .meta{text-align:left}.metrics{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot"></span>Podium <span class="muted" style="font-weight:400">· Evidence-Driven Agentic GraphRAG on TigerGraph</span></div>
+  <nav>
+    <button data-screen="compare" class="active">Compare</button>
+    <button data-screen="inspect">Inspect</button>
+    <button data-screen="benchmark">Benchmark</button>
+    <button data-screen="about">Architecture</button>
+  </nav>
+  <div class="status" id="status"><span class="pill">checking…</span></div>
+</header>
+<main>
+
+<!-- ============================ COMPARE ============================ -->
+<section class="screen active" id="screen-compare">
+  <h1>Ask the corpus three ways</h1>
+  <p class="sub">The same question runs through RAG, GraphRAG and Agentic GraphRAG on the same TigerGraph graph. Every answer carries its evidence, its cost, and the reason the system stopped.</p>
+  <div class="card">
+    <div class="ask">
+      <input type="text" id="question" placeholder="e.g. According to the provided corpus, how many biathlon events at the 2018 Winter Olympics had more than 73 competitors?">
+      <button class="primary" id="run-live">Run live</button>
+      <button class="secondary" id="load-recorded" title="Load the recorded benchmark answers for a public question">Load recorded</button>
+    </div>
+    <div class="examples" id="examples"></div>
+    <div class="toolbar" style="margin-top:12px">
+      <span class="muted" style="font-size:12px">Live pipelines:</span>
+      <label><input type="checkbox" class="pipe" value="rag" checked> RAG</label>
+      <label><input type="checkbox" class="pipe" value="graphrag" checked> GraphRAG</label>
+      <label><input type="checkbox" class="pipe" value="agentic_graphrag" checked> Agentic GraphRAG</label>
+      <label><input type="checkbox" class="pipe" value="fixed_plan"> Fixed-plan control</label>
+      <span id="mode-pill" class="pill" style="margin-left:auto">no result yet</span>
+    </div>
+  </div>
+  <div id="compare-results" class="grid3" style="margin-top:14px"></div>
+  <div id="compare-statement"></div>
+</section>
+
+<!-- ============================ INSPECT ============================ -->
+<section class="screen" id="screen-inspect">
+  <h1>Inspect the investigation</h1>
+  <p class="sub">Follow an answer from its wording to the graph operation and the original source span.</p>
+  <div class="toolbar">
+    <select id="inspect-run"></select>
+    <select id="inspect-split"><option value="public">public</option><option value="hidden">hidden</option><option value="robustness">robustness</option></select>
+    <select id="inspect-qid" style="min-width:420px"></select>
+    <select id="inspect-pipeline"><option value="rag">RAG</option><option value="graphrag">GraphRAG</option><option value="agentic_graphrag" selected>Agentic GraphRAG</option><option value="fixed_plan">Fixed-plan control</option><option value="agentic_nocov">No-coverage control</option></select>
+    <button class="secondary" id="inspect-load">Load</button>
+  </div>
+  <div id="inspect-body"><p class="muted">Pick a recorded prediction, or click “Inspect” on a live result.</p></div>
+</section>
+
+<!-- ============================ BENCHMARK ============================ -->
+<section class="screen" id="screen-benchmark">
+  <h1>Benchmark dashboard</h1>
+  <p class="sub">Accuracy, completeness and token cost for every pipeline on the 100 public questions, plus the unscored hidden set and the labelled robustness set. Public results are scored locally (exact/numeric match and a blind LLM judge from a different model family); hidden accuracy is unknown to us.</p>
+  <div class="toolbar">
+    <select id="bench-run"></select>
+    <select id="bench-split"><option value="public">public (scored)</option><option value="robustness">robustness (scored, supplemental)</option><option value="hidden">hidden (unscored)</option></select>
+    <span id="bench-downloads" style="margin-left:auto"></span>
+  </div>
+  <div id="bench-body"><p class="muted">No run selected.</p></div>
+</section>
+
+<!-- ============================ ABOUT ============================ -->
+<section class="screen" id="screen-about">
+  <h1>Architecture</h1>
+  <p class="sub">Corpus → TigerGraph (graph + vectors) → three pipelines → evidence report → offline evaluation.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>Pipelines</h3>
+      <p><b style="color:var(--rag)">RAG</b> — one fixed similarity search over chunk vectors stored in TigerGraph (<span class="mono">vectorSearch</span>), one grounded generation. No graph traversal, no complete-set counting.</p>
+      <p><b style="color:var(--graphrag)">GraphRAG</b> — the question is interpreted once, then one fixed retrieval template runs installed GSQL queries (cohort aggregate, maximum, venue→event, PREVIOUS_EVENT edge, facts with source spans). It cannot replan after seeing missing evidence.</p>
+      <p><b style="color:var(--agentic)">Agentic GraphRAG</b> — the same tools, but an orchestrator keeps an explicit ledger of <i>evidence requirements</i>. A deterministic coverage check reports the gaps; the orchestrator (LLM) picks the next specialist action (entity linking, graph traversal, similarity search, document retrieval, aggregation, prose repair, disambiguation) until the requirements are satisfied or a budget stops it. Every step is traced with its execution kind and tokens.</p>
+      <p><b style="color:var(--fixed)">Fixed-plan control</b> — the agent's planner and tools with replanning disabled: isolates the value of adaptation.</p>
+    </div>
+    <div class="card">
+      <h3>Graph model (TigerGraph 4.2, Savanna)</h3>
+      <p class="mono" style="font-size:12px;line-height:1.7">Document —HAS_CHUNK→ Chunk(embedding VECTOR 1536)<br>Document —DESCRIBES_EVENT→ Event —IN_EDITION→ Edition —PREVIOUS_EDITION→ Edition<br>Event —IN_SPORT→ Sport · Event —AT_VENUE→ Venue<br>Event —HAS_FACT→ Fact —SUPPORTED_BY→ Chunk (char offsets)<br>Entity —WON_MEDAL{medal,noc}→ Event · Entity —REPRESENTS→ Entity(NOC)<br>Event —PREVIOUS_EVENT{source}→ Event</p>
+      <p>Counts and superlatives are computed <i>inside the graph</i> over the complete corpus-defined cohort (sport × edition) and return the full candidate manifest with included / excluded / unknown status. A missing number is never treated as zero.</p>
+      <h3 style="margin-top:14px">Original contribution</h3>
+      <p>Coverage-directed investigation: the answer's evidence requirements are explicit objects; unresolved requirements drive the next action; evidence repair recovers missing infobox values from article prose with a verbatim, character-checked quote; ambiguity is reported instead of guessed.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>System status</h3><pre id="about-health" class="mono" style="font-size:12px;white-space:pre-wrap;color:var(--text-2)"></pre></div>
+</section>
+</main>
+<footer>Podium · corpus text derived from English Wikipedia (CC BY-SA 4.0) · graph &amp; vector retrieval on TigerGraph Savanna</footer>
+
+<script>
+const COLORS={rag:'#3987e5',graphrag:'#d95926',agentic_graphrag:'#199e70',fixed_plan:'#c98500',agentic_nocov:'#9085e9'};
+const NAMES={rag:'RAG',graphrag:'GraphRAG',agentic_graphrag:'Agentic GraphRAG',fixed_plan:'Fixed-plan control',agentic_nocov:'No-coverage control'};
+const STOP={sufficient_evidence:'Every evidence requirement was satisfied.',ambiguous_entity:'More than one corpus entity satisfies the constraints; all candidates are reported.',incomplete_scope:'Some candidates could not be resolved from the corpus; the result is bounded.',unresolved_conflict:'Sources disagree and the corpus cannot resolve it.',no_new_evidence:'Further actions produced no new evidence.',budget_exhausted:'A step, token or time budget stopped the investigation.',tool_unavailable:'A required tool was unavailable.',no_evidence:'The corpus does not contain the evidence needed.',single_pass:'Fixed single-pass pipeline: no stopping decision is made.',error:'An error interrupted the pipeline.'};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const fmt=n=>n==null?'—':Number(n).toLocaleString();
+const state={runs:[],questions:{},current:null,liveRecords:null};
+async function api(p,opt){const r=await fetch(p,opt);if(!r.ok)throw new Error(await r.text());return r.json();}
+
+// ---------- navigation
+$$('header nav button').forEach(b=>b.onclick=()=>show(b.dataset.screen));
+function show(name,keepHash){$$('header nav button').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));$$('section.screen').forEach(s=>s.classList.toggle('active',s.id==='screen-'+name));window.scrollTo(0,0);if(!keepHash)history.replaceState(null,'','#'+name);}
+function route(){const h=location.hash.replace(/^#/,'');if(!h)return;const [name,qs]=h.split('?');if(!['compare','inspect','benchmark','about'].includes(name))return;show(name,true);const p=new URLSearchParams(qs||'');
+  if(name==='inspect'&&p.get('qid')){if(p.get('run'))$('#inspect-run').value=p.get('run');if(p.get('split')){$('#inspect-split').value=p.get('split');fillQids();}$('#inspect-qid').value=p.get('qid');if(p.get('pipeline'))$('#inspect-pipeline').value=p.get('pipeline');$('#inspect-load').click();}
+  if(name==='benchmark'){if(p.get('run'))$('#bench-run').value=p.get('run');if(p.get('split'))$('#bench-split').value=p.get('split');renderBenchmark();}}
+
+// ---------- health
+(async()=>{try{const h=await api('/api/health');const tg=h.tigergraph||{};const ok=tg.reachable;const ver=h.graph_verification;$('#status').innerHTML=`<span class="pill ${ok?'ok':'bad'}">TigerGraph ${ok?'connected':'unreachable'}</span><span class="pill ${ver&&ver.reconciled?'ok':'warn'}">graph ${ver?(ver.reconciled?'reconciled':'not reconciled'):'unverified'}</span><span class="pill">${h.settings.answer_model}</span>`;$('#about-health').textContent=JSON.stringify(h,null,1);}catch(e){$('#status').innerHTML='<span class="pill bad">API offline</span>';}})();
+
+// ---------- questions & runs
+async function loadMeta(){
+  for(const s of ['public','hidden','robustness']){try{state.questions[s]=await api('/api/questions?split='+s);}catch(e){state.questions[s]=[];}}
+  const ex=$('#examples');ex.innerHTML='';
+  const picks=['pub-009','pub-001','pub-002','pub-010','pub-099','pub-004'];
+  for(const q of state.questions.public.filter(q=>picks.includes(q.qid))){const b=document.createElement('button');b.textContent=q.qid+' · '+q.qtype;b.title=q.question;b.onclick=()=>{$('#question').value=q.question;};ex.appendChild(b);}
+  for(const q of (state.questions.robustness||[]).slice(0,4)){const b=document.createElement('button');b.textContent=q.qid+' · robustness';b.title=q.question;b.onclick=()=>{$('#question').value=q.question;};ex.appendChild(b);}
+  state.runs=(await api('/api/runs')).filter(r=>r.run_id!=='live');
+  for(const sel of ['#inspect-run','#bench-run']){const el=$(sel);el.innerHTML='';for(const r of state.runs){const o=document.createElement('option');o.value=r.run_id;o.textContent=r.run_id;el.appendChild(o);}if(state.runs.length)el.value=state.runs[state.runs.length-1].run_id;}
+  fillQids();
+  if(state.runs.length)renderBenchmark();
+  route();
+}
+function fillQids(){const split=$('#inspect-split').value;const el=$('#inspect-qid');el.innerHTML='';for(const q of (state.questions[split]||[])){const o=document.createElement('option');o.value=q.qid;o.textContent=`${q.qid} · ${q.qtype} · ${q.question.slice(0,90)}`;el.appendChild(o);}}
+$('#inspect-split').onchange=fillQids;
+loadMeta();
+
+// ---------- compare
+$('#run-live').onclick=async()=>{
+  const q=$('#question').value.trim();if(!q)return;
+  const pipes=$$('.pipe:checked').map(c=>c.value);
+  $('#run-live').disabled=true;$('#mode-pill').innerHTML='<span class="spinner"></span> running live on TigerGraph…';$('#mode-pill').className='pill warn';
+  $('#compare-results').innerHTML=pipes.map(p=>`<div class="card pcard ${p}"><div class="name">${NAMES[p]}</div><div class="muted"><span class="spinner"></span> investigating…</div></div>`).join('');
+  try{const r=await api('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,pipelines:pipes})});state.liveRecords=r.records;renderCompare(r.records,'live');$('#mode-pill').textContent='live execution · '+new Date().toLocaleTimeString();$('#mode-pill').className='pill ok';}
+  catch(e){$('#compare-results').innerHTML=`<div class="card bad">${e.message}</div>`;$('#mode-pill').textContent='error';$('#mode-pill').className='pill bad';}
+  $('#run-live').disabled=false;
+};
+$('#load-recorded').onclick=async()=>{
+  const q=$('#question').value.trim();const runId=$('#bench-run').value||$('#inspect-run').value;if(!runId){alert('no recorded run available');return;}
+  let match=null,split=null;for(const s of ['public','robustness','hidden']){match=(state.questions[s]||[]).find(x=>x.question===q);if(match){split=s;break;}}
+  if(!match){alert('This question is not in a recorded set; run it live.');return;}
+  const recs=await api(`/api/runs/${runId}/predictions?split=${split}&qid=${match.qid}&compact=false`);
+  renderCompare(recs,'replay',match);$('#mode-pill').textContent=`replay of run ${runId} (${split}) — recorded latency, not live`;$('#mode-pill').className='pill';
+};
+function card(rec,mode,gold){
+  const r=rec.result,p=rec.pipeline,u=r.usage,t=r.trace;
+  const ans=r.answer&&r.answer.length?r.answer.join(' · '):'(no answer)';
+  const st=r.status;const stc=st==='answered'?'ok':st==='error'?'bad':'warn';
+  const goldTxt=gold?`<div class="cites">gold: <b>${gold.answer.join(' · ')}</b> ${gold.answer.map(g=>norm(g)).some(g=>(r.answer||[]).map(norm).includes(g))?'<span class="ok">✓ match</span>':'<span class="bad">✗</span>'}</div>`:'';
+  return `<div class="card pcard ${p}">
+    <div class="name"><span>${NAMES[p]}</span><span class="pill ${stc}">${st}</span></div>
+    <div class="answer ${r.answer&&r.answer.length?'':'empty'}">${esc(ans)}</div>${goldTxt}
+    <div class="metrics">
+      <div class="metric"><div class="v">${fmt(u.total_tokens)}</div><div class="l">total tokens</div></div>
+      <div class="metric"><div class="v">${fmt(u.context_tokens)}</div><div class="l">context tokens</div></div>
+      <div class="metric"><div class="v">${(r.latency_ms/1000).toFixed(1)}s</div><div class="l">${mode==='live'?'latency':'recorded latency'}</div></div>
+      <div class="metric"><div class="v">${t.events.length}</div><div class="l">steps · ${t.n_retrieval_steps} retrieval</div></div>
+    </div>
+    <div class="expl">${esc(r.explanation||r.error||'')}</div>
+    <div class="cites">${r.citations.length} citation(s) · stop: <span class="mono">${r.stop_reason}</span>${t.strategy_changed?' · <span class="warn">strategy changed</span>':''} · <a href="#" onclick="inspectRecord(${JSON.stringify(rec).replace(/"/g,'&quot;')});return false;">Inspect →</a></div>
+  </div>`;
+}
+function norm(s){return String(s||'').normalize('NFKC').toLowerCase().replace(/\s+/g,' ').replace(/[–—]/g,'-').trim();}
+function esc(s){return String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function renderCompare(recs,mode,gold){
+  $('#compare-results').innerHTML=recs.map(r=>card(r,mode,gold)).join('');
+  const by={};recs.forEach(r=>by[r.pipeline]=r.result);
+  const g=by.graphrag,a=by.agentic_graphrag,rg=by.rag;
+  let s=[];
+  if(rg&&g){s.push(`RAG ${same(rg,g)?'agrees with':'differs from'} GraphRAG`);}
+  if(g&&a){const dt=a.usage.total_tokens-g.usage.total_tokens;s.push(`Agentic GraphRAG ${same(a,g)?'reaches the same answer as':'answers differently from'} GraphRAG using ${dt>=0?'+':''}${fmt(dt)} tokens and ${a.trace.events.length-g.trace.events.length>=0?'+':''}${a.trace.events.length-g.trace.events.length} steps${a.trace.strategy_changed?'; the agent changed strategy during the investigation':''}${a.coverage.unknown_values?`; ${a.coverage.unknown_values} candidate value(s) remain unknown`:''}.`);}
+  if(a)s.push('Stop reason: '+(STOP[a.stop_reason]||a.stop_reason));
+  $('#compare-statement').innerHTML=s.length?`<div class="stmt">${s.join(' · ')}</div>`:'';
+}
+function same(x,y){return JSON.stringify((x.answer||[]).map(norm))===JSON.stringify((y.answer||[]).map(norm));}
+
+// ---------- inspect
+window.inspectRecord=function(rec){state.current=rec;renderInspect(rec);show('inspect');};
+$('#inspect-load').onclick=async()=>{const run=$('#inspect-run').value,split=$('#inspect-split').value,qid=$('#inspect-qid').value,p=$('#inspect-pipeline').value;
+  try{const recs=await api(`/api/runs/${run}/predictions?split=${split}&qid=${qid}&pipeline=${p}&compact=false`);if(!recs.length){$('#inspect-body').innerHTML='<p class="muted">no record for this selection</p>';return;}inspectRecord(recs[0]);}catch(e){$('#inspect-body').innerHTML=`<p class="bad">${e.message}</p>`;}};
+function renderInspect(rec){
+  const r=rec.result,t=r.trace,c=r.coverage;
+  const gold=(state.questions.public||[]).concat(state.questions.robustness||[]).find(q=>q.qid===rec.qid);
+  const reqs=c.requirements.map(q=>`<div class="req"><span class="st ${q.status}">${q.status}</span><span><b>${q.req_id}</b> ${esc(q.description)} ${q.note?`<span class="muted">(${esc(q.note)})</span>`:''}</span></div>`).join('')||'<p class="muted">no explicit requirements (single-pass pipeline)</p>';
+  const cands=c.candidates&&c.candidates.length?`<h2>Candidate set — ${esc(c.candidate_scope)} (${c.candidate_count} candidates, ${c.unknown_values} unknown${c.bounds?`; bounds ${c.bounds.lower}–${c.bounds.upper}`:''})</h2><div class="tablewrap"><table id="candtable"><thead><tr><th data-k="title">event</th><th class="num" data-k="value">competitors</th><th data-k="status">status</th><th data-k="source">source</th><th>reason</th></tr></thead><tbody>${c.candidates.map(x=>`<tr class="cand ${x.status}"><td>${esc(x.title)}</td><td class="num">${x.value_raw??'—'}</td><td>${x.status}</td><td>${x.source}</td><td class="muted">${esc(x.reason)}</td></tr>`).join('')}</tbody></table></div>`:'';
+  const steps=t.events.map(e=>`<div class="step ${e.strategy_change?'change':''}"><div class="n">${e.step}</div><div class="who">${e.specialist}<small>${e.tool}</small></div><div class="what"><span class="kind ${e.execution_kind}">${e.execution_kind}</span>${esc(e.result_summary)}${e.error?` <span class="bad">${esc(e.error)}</span>`:''}${e.rationale?`<div class="muted" style="font-size:12px">why: ${esc(e.rationale)}</div>`:''}<div class="args">${esc(JSON.stringify(e.arguments)).slice(0,220)}</div></div><div class="meta">${e.latency_ms.toFixed(0)} ms<br>${e.tokens?e.tokens+' tok':''}<br>${e.coverage_before!==e.coverage_after?`gaps ${e.coverage_before}→${e.coverage_after}`:''}${e.strategy_change?'<br><span class="warn">strategy change</span>':''}</div></div>`).join('');
+  const cites=r.citations.map((x,i)=>`<div class="cite" onclick="showSource('${x.doc_id}',${x.char_start??'null'},${x.char_end??'null'},${JSON.stringify(x.quote||'').replace(/"/g,'&quot;')})"><div class="t">${esc(x.title)} <span class="muted mono">${x.chunk_id||''} ${x.char_start!=null?`[${x.char_start}–${x.char_end}]`:''}</span></div><div class="q">“${esc((x.quote||'').slice(0,160))}”</div></div>`).join('')||'<p class="muted">no citations</p>';
+  $('#inspect-body').innerHTML=`
+    <div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="muted mono">${rec.qid} · ${rec.pipeline} · ${rec.run_id}</div><div style="font-size:16px;font-weight:600;margin:4px 0">${esc(rec.question)}</div><div class="answer">${esc((r.answer||[]).join(' · ')||'(no answer)')} <span class="pill ${r.status==='answered'?'ok':'warn'}">${r.status}</span></div>${gold?`<div class="muted">gold answer: <b>${esc(gold.answer.join(' · '))}</b></div>`:''}<div class="expl" style="margin-top:6px">${esc(r.explanation||'')}</div></div>
+      <div style="min-width:260px"><div class="metrics" style="grid-template-columns:repeat(2,1fr)"><div class="metric"><div class="v">${fmt(r.usage.total_tokens)}</div><div class="l">tokens (${fmt(r.usage.input_tokens)} in / ${fmt(r.usage.output_tokens)} out)</div></div><div class="metric"><div class="v">${fmt(r.usage.context_tokens)}</div><div class="l">context tokens</div></div><div class="metric"><div class="v">${(r.latency_ms/1000).toFixed(1)}s</div><div class="l">latency</div></div><div class="metric"><div class="v">${r.usage.llm_calls}</div><div class="l">LLM calls · ${t.n_llm_decisions} decisions</div></div></div></div></div>
+      <div class="stmt"><b>Stopped:</b> <span class="mono">${r.stop_reason}</span> — ${esc(STOP[r.stop_reason]||'')} ${t.stop_explanation?'('+esc(t.stop_explanation)+')':''}</div></div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card"><h3>Evidence requirements</h3>${reqs}<h3 style="margin-top:14px">Interpretation</h3><div class="mono muted" style="font-size:12px">${esc(JSON.stringify(r.interpretation))}</div></div>
+      <div class="card"><h3>Citations (click to open the source span)</h3>${cites}</div>
+    </div>
+    ${cands}
+    <div class="grid2" style="margin-top:14px">
+      <div class="card"><h3>Graph path used by the answer</h3><div id="graph"></div><div class="muted" style="font-size:12px;margin-top:6px">${r.graph_path.length} relation(s) traversed in TigerGraph</div></div>
+      <div class="card"><h3>Source viewer</h3><div id="source" class="src muted">click a citation…</div></div>
+    </div>
+    <h2>Action timeline (${t.events.length} steps · retrieval methods: ${t.retrieval_methods.join(', ')||'—'} · specialists: ${t.specialists_invoked.join(', ')})</h2>
+    <div class="timeline">${steps}</div>`;
+  drawGraph(r);
+  const tb=$('#candtable');if(tb){tb.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>sortTable(tb,th.dataset.k));}
+}
+function sortTable(tb,k){const rows=[...tb.tBodies[0].rows];const idx={title:0,value:1,status:2,source:3}[k];const asc=tb.dataset.sort!==k;tb.dataset.sort=asc?k:'';rows.sort((a,b)=>{let x=a.cells[idx].textContent,y=b.cells[idx].textContent;if(k==='value'){x=parseFloat(x)||-1;y=parseFloat(y)||-1;return asc?x-y:y-x;}return asc?x.localeCompare(y):y.localeCompare(x);});rows.forEach(r=>tb.tBodies[0].appendChild(r));}
+window.showSource=async function(doc,s,e,quote){const el=$('#source');el.textContent='loading…';try{const d=await api('/api/doc/'+doc);let t=d.text;let html;if(s!=null&&e!=null&&e<=t.length){html=esc(t.slice(0,s))+'<mark>'+esc(t.slice(s,e))+'</mark>'+esc(t.slice(e));}else if(quote&&t.includes(quote)){const i=t.indexOf(quote);html=esc(t.slice(0,i))+'<mark>'+esc(quote)+'</mark>'+esc(t.slice(i+quote.length));}else html=esc(t);el.innerHTML=`<div style="margin-bottom:8px;color:var(--text-1)"><b>${esc(d.title)}</b> · <a href="${d.url}" target="_blank" rel="noopener">source URL</a> · ${d.doc_id}</div>`+html;const m=el.querySelector('mark');if(m)m.scrollIntoView({block:'center'});}catch(err){el.textContent=err.message;}};
+function drawGraph(r){
+  const el=$('#graph');if(!el||!window.vis)return;
+  const ids=new Set();const edges=[];
+  for(const e of r.graph_path){ids.add(e.from);ids.add(e.to);edges.push({from:e.from,to:e.to,label:e.rel+(e.label?'\n'+e.label:''),arrows:'to',font:{size:9,color:'#c3c2b7',strokeWidth:0},color:{color:'#5a5a56'}});}
+  if(!ids.size){el.innerHTML='<p class="muted" style="padding:12px">no graph relations recorded for this answer (pure vector retrieval)</p>';return;}
+  const evTitles={};(r.coverage.candidates||[]).forEach(c=>evTitles[c.event_id]=c.title);r.citations.forEach(c=>evTitles[c.doc_id]=c.title);
+  const nodes=[...ids].map(id=>{let label=evTitles[id]||id;let color='#2c2c2a';if(id.startsWith('Q'))color='#1c5cab';else if(id.startsWith('f-'))color='#4a3aa7';else if(/^\d{4} /.test(id))color='#8a4a1a';else if(id.startsWith('ath:')||id.startsWith('noc:'))color='#0f6b4c';else color='#3d3d3a';return {id,label:String(label).replace(/ – /,'\n').slice(0,60),color:{background:color,border:'#555'},font:{color:'#fff',size:11},shape:'box',margin:6};});
+  new vis.Network(el,{nodes:new vis.DataSet(nodes),edges:new vis.DataSet(edges)},{physics:{stabilization:true,barnesHut:{springLength:140}},interaction:{hover:true}});
+}
+
+// ---------- benchmark
+$('#bench-run').onchange=renderBenchmark;$('#bench-split').onchange=renderBenchmark;
+let charts=[];
+async function renderBenchmark(){
+  const run=$('#bench-run').value,split=$('#bench-split').value;if(!run)return;
+  charts.forEach(c=>c.destroy());charts=[];
+  $('#bench-downloads').innerHTML=['predictions','scores','summary'].map(n=>`<a href="/api/runs/${run}/download/${n}_${split}.${n==='summary'?'json':'jsonl'}" style="margin-left:10px">↓ ${n}</a>`).join('');
+  let s;try{s=await api(`/api/runs/${run}/summary?split=${split}`);}catch(e){$('#bench-body').innerHTML=`<p class="muted">No evaluation summary for ${run}/${split} yet.</p>`;return;}
+  const pipes=Object.keys(s.pipelines).sort((a,b)=>Object.keys(NAMES).indexOf(a)-Object.keys(NAMES).indexOf(b));
+  const scored=split!=='hidden';
+  const P=s.pipelines;
+  const tiles=pipes.map(p=>`<div class="tile" style="border-top:3px solid ${COLORS[p]}"><div class="l">${NAMES[p]}</div><div class="v">${scored?(P[p].accuracy_exact??'—')+'%':fmt(P[p].mean_tokens)}</div><div class="d">${scored?`judge ${P[p].accuracy_judge??'—'}% · completeness ${P[p].completeness_judge??'—'} · ${fmt(P[p].mean_tokens)} tok/answer`:`mean tokens · ${P[p].answered} answered, ${P[p].abstained} abstained`}</div></div>`).join('');
+  const paired=s.paired_graphrag_vs_agentic;
+  const pairedHtml=paired?`<div class="stmt">Paired GraphRAG → Agentic (n=${paired.n}): quality lift <b>${paired.quality_lift_pct_points} pp</b> (bootstrap 95% CI ${paired.bootstrap_95ci_lift?paired.bootstrap_95ci_lift.join(' … '):'—'}), mean token delta <b>${fmt(paired.mean_token_delta)}</b>, extra tokens per extra correct answer: <b>${paired.extra_tokens_per_extra_correct}</b>. Agent wins: ${paired.agent_wins.join(', ')||'none'} · losses: ${paired.agent_losses.join(', ')||'none'}.</div>`:'';
+  const cols=scored?['n','accuracy_exact','accuracy_judge','completeness_judge','evidence_support_judge','citations_all_valid_rate','coverage_complete_rate','gold_doc_recall_examined','mean_tokens','median_tokens','mean_context_tokens','mean_llm_calls','p50_latency_ms','p95_latency_ms','mean_steps','strategy_change_rate','abstained','errors']:['n','answered','partial','abstained','errors','mean_tokens','median_tokens','mean_context_tokens','mean_llm_calls','p50_latency_ms','p95_latency_ms','mean_steps','strategy_change_rate','citations_all_valid_rate'];
+  const table=`<div class="tablewrap"><table><thead><tr><th>pipeline</th>${cols.map(c=>`<th class="num">${c.replace(/_/g,' ')}</th>`).join('')}</tr></thead><tbody>${pipes.map(p=>`<tr><td><b style="color:${COLORS[p]}">${NAMES[p]}</b></td>${cols.map(c=>`<td class="num">${fmtv(c,P[p][c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  const qtypes=Object.keys(s.by_qtype||{});
+  const qtTable=qtypes.length?`<h2>By question type ${scored?'(exact-match accuracy % · mean tokens)':'(mean tokens · answered)'}</h2><div class="tablewrap"><table><thead><tr><th>type</th>${pipes.map(p=>`<th class="num" style="color:${COLORS[p]}">${NAMES[p]}</th>`).join('')}</tr></thead><tbody>${qtypes.map(q=>`<tr><td>${q} <span class="muted">(n=${s.by_qtype[q][pipes[0]].n})</span></td>${pipes.map(p=>{const a=s.by_qtype[q][p];return `<td class="num">${scored?`${a.accuracy_exact??'—'}% · ${fmt(a.mean_tokens)}`:`${fmt(a.mean_tokens)} · ${a.answered}`}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`:'';
+  const fails=(s.failures||[]).filter(f=>f.pipeline!=='rag'||true);
+  const failHtml=scored?`<h2>Failure explorer (${fails.length} incorrect predictions)</h2><div class="tablewrap"><table><thead><tr><th>qid</th><th>pipeline</th><th>type</th><th>predicted</th><th>gold</th><th>status</th><th>stop</th><th></th></tr></thead><tbody>${fails.map(f=>`<tr><td class="mono">${f.qid}</td><td style="color:${COLORS[f.pipeline]}">${NAMES[f.pipeline]}</td><td>${f.qtype}</td><td>${esc((f.answer||[]).join(' · ')).slice(0,80)}</td><td>${esc((f.gold||[]).join(' · ')).slice(0,60)}</td><td>${f.status}</td><td class="mono">${f.stop_reason}</td><td><a href="#" onclick="openFail('${run}','${split}','${f.qid}','${f.pipeline}');return false;">inspect</a></td></tr>`).join('')}</tbody></table></div>`:'';
+  $('#bench-body').innerHTML=`<div class="tiles">${tiles}</div>${pairedHtml}<h2>Aggregate (${split})</h2>${table}
+    <div class="grid2" style="margin-top:14px">
+      ${scored?'<div class="card"><h3>Accuracy by question type (exact match, %)</h3><div class="chart"><canvas id="c-acc"></canvas></div></div>':''}
+      <div class="card"><h3>Mean tokens per answer by question type</h3><div class="chart"><canvas id="c-tok"></canvas></div></div>
+      ${scored?'<div class="card"><h3>Accuracy vs mean tokens (one point per pipeline × type)</h3><div class="chart"><canvas id="c-sc"></canvas></div></div>':''}
+      <div class="card"><h3>Steps and strategy changes</h3><div class="chart"><canvas id="c-steps"></canvas></div></div>
+    </div>${qtTable}${failHtml}`;
+  const legendFor=(ctx)=>({labels:{color:'#c3c2b7',boxWidth:10}});
+  const axes={x:{ticks:{color:'#8d8c84'},grid:{color:'#2c2c2a'}},y:{ticks:{color:'#8d8c84'},grid:{color:'#2c2c2a'},beginAtZero:true}};
+  const common={responsive:true,maintainAspectRatio:false,plugins:{legend:legendFor(),tooltip:{mode:'index',intersect:false}},scales:axes,borderRadius:4,barPercentage:.7,categoryPercentage:.7};
+  if(scored&&qtypes.length)charts.push(new Chart($('#c-acc'),{type:'bar',data:{labels:qtypes,datasets:pipes.map(p=>({label:NAMES[p],data:qtypes.map(q=>s.by_qtype[q][p].accuracy_exact),backgroundColor:COLORS[p]}))},options:{...common,scales:{...axes,y:{...axes.y,max:100}}}}));
+  if(qtypes.length)charts.push(new Chart($('#c-tok'),{type:'bar',data:{labels:qtypes,datasets:pipes.map(p=>({label:NAMES[p],data:qtypes.map(q=>s.by_qtype[q][p].mean_tokens),backgroundColor:COLORS[p]}))},options:common}));
+  if(scored&&qtypes.length)charts.push(new Chart($('#c-sc'),{type:'scatter',data:{datasets:pipes.map(p=>({label:NAMES[p],data:qtypes.map(q=>({x:s.by_qtype[q][p].mean_tokens,y:s.by_qtype[q][p].accuracy_exact,t:q})),backgroundColor:COLORS[p],pointRadius:6}))},options:{...common,plugins:{legend:legendFor(),tooltip:{callbacks:{label:c=>`${c.dataset.label} · ${c.raw.t}: ${c.raw.y}% at ${fmt(c.raw.x)} tokens`}}},scales:{x:{...axes.x,title:{display:true,text:'mean tokens',color:'#8d8c84'}},y:{...axes.y,max:100,title:{display:true,text:'accuracy %',color:'#8d8c84'}}}}}));
+  charts.push(new Chart($('#c-steps'),{type:'bar',data:{labels:['mean steps','mean retrieval steps','strategy change %','mean LLM calls'],datasets:pipes.map(p=>({label:NAMES[p],data:[P[p].mean_steps,P[p].mean_retrieval_steps,P[p].strategy_change_rate,P[p].mean_llm_calls],backgroundColor:COLORS[p]}))},options:common}));
+}
+function fmtv(c,v){if(v==null)return '—';if(typeof v==='object')return JSON.stringify(v);if(/accuracy|rate/.test(c))return v+'%';if(/latency/.test(c))return (v/1000).toFixed(1)+'s';return fmt(v);}
+window.openFail=async function(run,split,qid,p){$('#inspect-run').value=run;$('#inspect-split').value=split;fillQids();$('#inspect-qid').value=qid;$('#inspect-pipeline').value=p;$('#inspect-load').click();show('inspect');};
+</script>
+</body>
+</html>

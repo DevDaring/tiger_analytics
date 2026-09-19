@@ -1,0 +1,53 @@
+// Podium graph schema for TigerGraph 4.2 (plan section 6, "Proposed minimum graph schema").
+// Vertices carry stable, source-derived IDs. Facts point to exact chunk spans.
+
+CREATE VERTEX Document (PRIMARY_ID doc_id STRING, title STRING, url STRING, wikidata_qid STRING,
+  infobox_type STRING, is_olympic_event BOOL, n_chunks INT, n_chars INT, content_hash STRING)
+  WITH PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Chunk (PRIMARY_ID chunk_id STRING, doc_id STRING, ordinal INT, section STRING, kind STRING,
+  text STRING, char_start INT, char_end INT, tokens INT, content_hash STRING)
+  WITH PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Event (PRIMARY_ID event_id STRING, title STRING, sport STRING, sport_norm STRING, season STRING,
+  edition_year INT, edition_id STRING, event_name STRING, event_norm STRING, event_field STRING,
+  venue_raw STRING, venue_id STRING, date_raw STRING, date_norm STRING, date_days STRING, date_years STRING,
+  competitors INT, has_competitors BOOL, competitors_raw STRING, competitors_unit STRING, competitors_status STRING,
+  nations INT, has_nations BOOL, nations_raw STRING, nations_status STRING,
+  gold_raw STRING, gold_noc STRING, silver_raw STRING, silver_noc STRING, bronze_raw STRING, bronze_noc STRING,
+  bronze2_raw STRING, bronze2_noc STRING, prev_raw STRING, next_raw STRING, prev_year INT, next_year INT,
+  win_value STRING, parse_status STRING, infobox_chunk_id STRING)
+  WITH PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Edition (PRIMARY_ID edition_id STRING, year INT, season STRING, label STRING, n_events INT)
+  WITH PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Sport (PRIMARY_ID sport_norm STRING, name STRING, n_events INT)
+  WITH PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Venue (PRIMARY_ID venue_id STRING, name STRING, aliases STRING, n_events INT)
+  WITH PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Entity (PRIMARY_ID entity_id STRING, name STRING, name_norm STRING, entity_type STRING, noc STRING,
+  doc_id STRING, members STRING)
+  WITH PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Fact (PRIMARY_ID fact_id STRING, subject_id STRING, predicate STRING, value_raw STRING,
+  value_num DOUBLE, unit STRING, status STRING, note STRING, method STRING, chunk_id STRING,
+  char_start INT, char_end INT)
+  WITH PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE DIRECTED EDGE HAS_CHUNK (FROM Document, TO Chunk) WITH REVERSE_EDGE="CHUNK_OF"
+CREATE DIRECTED EDGE DESCRIBES_EVENT (FROM Document, TO Event) WITH REVERSE_EDGE="EVENT_DOC"
+CREATE DIRECTED EDGE DESCRIBES_ENTITY (FROM Document, TO Entity) WITH REVERSE_EDGE="ENTITY_DOC"
+CREATE DIRECTED EDGE IN_EDITION (FROM Event, TO Edition) WITH REVERSE_EDGE="EDITION_HAS_EVENT"
+CREATE DIRECTED EDGE IN_SPORT (FROM Event, TO Sport) WITH REVERSE_EDGE="SPORT_HAS_EVENT"
+CREATE DIRECTED EDGE AT_VENUE (FROM Event, TO Venue) WITH REVERSE_EDGE="VENUE_HOSTED"
+CREATE DIRECTED EDGE HAS_FACT (FROM Event, TO Fact) WITH REVERSE_EDGE="FACT_OF"
+CREATE DIRECTED EDGE SUPPORTED_BY (FROM Fact, TO Chunk) WITH REVERSE_EDGE="SUPPORTS"
+CREATE DIRECTED EDGE WON_MEDAL (FROM Entity, TO Event, medal STRING, noc STRING, fact_id STRING) WITH REVERSE_EDGE="MEDAL_WON_BY"
+CREATE DIRECTED EDGE REPRESENTS (FROM Entity, TO Entity) WITH REVERSE_EDGE="REPRESENTED_BY"
+CREATE DIRECTED EDGE PREVIOUS_EVENT (FROM Event, TO Event, source STRING, prev_raw STRING) WITH REVERSE_EDGE="NEXT_EVENT"
+CREATE DIRECTED EDGE PREVIOUS_EDITION (FROM Edition, TO Edition, source STRING) WITH REVERSE_EDGE="NEXT_EDITION"
+
+CREATE GRAPH Podium (*)

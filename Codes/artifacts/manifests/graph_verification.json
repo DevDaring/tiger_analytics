@@ -1,0 +1,54 @@
+{
+ "graph": "Podium",
+ "graph_snapshot_id": "podium-27aef30b-parser-v3-chunker-v2",
+ "checks": {
+  "documents": {
+   "graph": 2951,
+   "manifest": 2951,
+   "ok": true
+  },
+  "chunks": {
+   "graph": 17904,
+   "manifest": 17904,
+   "ok": true
+  },
+  "events": {
+   "graph": 2210,
+   "manifest": 2210,
+   "ok": true
+  },
+  "facts": {
+   "graph": 23178,
+   "manifest": 23178,
+   "ok": true
+  },
+  "entities": {
+   "graph": 5950,
+   "manifest": 5950,
+   "ok": true
+  },
+  "venues": {
+   "graph": 314,
+   "manifest": 314,
+   "ok": true
+  },
+  "previous_event_edges": {
+   "graph": 1520,
+   "manifest": 1520,
+   "ok": true
+  }
+ },
+ "reconciled": true,
+ "stats": {
+  "documents": 2951,
+  "chunks": 17904,
+  "events": 2210,
+  "facts": 23178,
+  "entities": 5950,
+  "venues": 314,
+  "editions": 20,
+  "sports": 47,
+  "previous_event_edges": 1520,
+  "medal_edges": 6546
+ }
+}

@@ -1,0 +1,196 @@
+// Installed, parameterised GSQL queries. The planner chooses tools + arguments; it never
+// generates database code (plan section 7). All queries are read-only.
+USE GRAPH Podium
+
+// ---- vector retrieval ---------------------------------------------------------------
+CREATE OR REPLACE QUERY search_chunks(LIST<float> query_vector, INT k) SYNTAX v3 {
+  MapAccum<Vertex, Float> @@distances;
+  v = vectorSearch({Chunk.embedding}, query_vector, k, {distance_map: @@distances});
+  PRINT v[v.chunk_id, v.doc_id, v.ordinal, v.section, v.kind, v.text, v.char_start, v.char_end, v.tokens] AS chunks;
+  PRINT @@distances AS distances;
+}
+
+// vector search restricted to the chunks of a corpus-defined event cohort (sport / edition)
+CREATE OR REPLACE QUERY search_chunks_scoped(LIST<float> query_vector, INT k, STRING sport_norm, INT year, STRING season) SYNTAX v3 {
+  MapAccum<Vertex, Float> @@distances;
+  cand = SELECT c FROM (e:Event)-[:EVENT_DOC]->(d:Document)-[:HAS_CHUNK]->(c:Chunk)
+         WHERE (sport_norm == "" OR e.sport_norm == sport_norm)
+           AND (year == 0 OR e.edition_year == year)
+           AND (season == "" OR e.season == season);
+  v = vectorSearch({Chunk.embedding}, query_vector, k, {candidate_set: cand, distance_map: @@distances});
+  PRINT v[v.chunk_id, v.doc_id, v.ordinal, v.section, v.kind, v.text, v.char_start, v.char_end, v.tokens] AS chunks;
+  PRINT @@distances AS distances;
+}
+
+// ---- document / chunk access ----------------------------------------------------------
+CREATE OR REPLACE QUERY doc_chunks(VERTEX<Document> doc) {
+  Start = {doc};
+  C = SELECT c FROM Start:d -(HAS_CHUNK)-> Chunk:c ORDER BY c.ordinal ASC;
+  PRINT Start[Start.doc_id, Start.title, Start.url, Start.infobox_type, Start.is_olympic_event] AS document;
+  PRINT C[C.chunk_id, C.doc_id, C.ordinal, C.section, C.kind, C.text, C.char_start, C.char_end, C.tokens] AS chunks;
+}
+
+CREATE OR REPLACE QUERY get_chunk(VERTEX<Chunk> ch) {
+  Start = {ch};
+  D = SELECT d FROM Start:c -(CHUNK_OF)-> Document:d;
+  PRINT Start[Start.chunk_id, Start.doc_id, Start.ordinal, Start.section, Start.kind, Start.text, Start.char_start, Start.char_end, Start.tokens] AS chunk;
+  PRINT D[D.doc_id, D.title, D.url] AS document;
+}
+
+// ---- event lookup ---------------------------------------------------------------------
+// every non-empty filter must match; the result is the complete corpus-defined set
+CREATE OR REPLACE QUERY find_events(STRING sport_norm, INT year, STRING season, STRING event_norm, STRING venue_id, STRING title_needle) {
+  SumAccum<INT> @@n;
+  E = SELECT e FROM Event:e
+      WHERE (sport_norm == "" OR e.sport_norm == sport_norm)
+        AND (year == 0 OR e.edition_year == year)
+        AND (season == "" OR e.season == season)
+        AND (event_norm == "" OR e.event_norm == event_norm)
+        AND (venue_id == "" OR e.venue_id == venue_id)
+        AND (title_needle == "" OR lower(e.title) LIKE "%" + lower(title_needle) + "%")
+      ACCUM @@n += 1
+      ORDER BY e.edition_year DESC, e.title ASC
+      LIMIT 500;
+  PRINT @@n AS n_events;
+  PRINT E AS events;
+}
+
+CREATE OR REPLACE QUERY events_at_venue(STRING venue_id, INT year) {
+  E = SELECT e FROM Venue:v -(VENUE_HOSTED)-> Event:e
+      WHERE v.venue_id == venue_id AND (year == 0 OR e.edition_year == year)
+      ORDER BY e.edition_year DESC, e.title ASC;
+  PRINT E AS events;
+}
+
+CREATE OR REPLACE QUERY venues_like(STRING needle, INT year) {
+  V = SELECT v FROM Venue:v WHERE v.venue_id LIKE "%" + needle + "%" LIMIT 50;
+  PRINT V AS venues;
+}
+
+CREATE OR REPLACE QUERY events_like(STRING needle, INT year, STRING season) {
+  E = SELECT e FROM Event:e
+      WHERE lower(e.title) LIKE "%" + lower(needle) + "%"
+        AND (year == 0 OR e.edition_year == year)
+        AND (season == "" OR e.season == season)
+      ORDER BY e.edition_year DESC, e.title ASC LIMIT 100;
+  PRINT E AS events;
+}
+
+// ---- aggregation over the complete cohort ------------------------------------------
+CREATE OR REPLACE QUERY aggregate_competitors(STRING sport_norm, INT year, STRING season, INT threshold, STRING op) {
+  SumAccum<INT> @@n_candidates;
+  SumAccum<INT> @@n_included;
+  SumAccum<INT> @@n_excluded;
+  SumAccum<INT> @@n_unknown;
+  SetAccum<STRING> @@included;
+  SetAccum<STRING> @@excluded;
+  SetAccum<STRING> @@unknown;
+  E = SELECT e FROM Event:e
+      WHERE e.sport_norm == sport_norm AND e.edition_year == year AND e.season == season
+      ACCUM @@n_candidates += 1,
+        IF e.has_competitors THEN
+          IF (op == ">" AND e.competitors > threshold) OR (op == ">=" AND e.competitors >= threshold)
+             OR (op == "<" AND e.competitors < threshold) OR (op == "<=" AND e.competitors <= threshold)
+             OR (op == "==" AND e.competitors == threshold) THEN
+            @@n_included += 1, @@included += e.event_id
+          ELSE
+            @@n_excluded += 1, @@excluded += e.event_id
+          END
+        ELSE
+          @@n_unknown += 1, @@unknown += e.event_id
+        END
+      ORDER BY e.competitors DESC, e.title ASC;
+  PRINT @@n_candidates AS n_candidates, @@n_included AS n_included, @@n_excluded AS n_excluded, @@n_unknown AS n_unknown;
+  PRINT @@included AS included, @@excluded AS excluded, @@unknown AS unknown;
+  PRINT E AS candidates;
+}
+
+CREATE OR REPLACE QUERY max_competitors(STRING sport_norm, INT year, STRING season) {
+  MaxAccum<INT> @@max_value;
+  SumAccum<INT> @@n_candidates;
+  SumAccum<INT> @@n_unknown;
+  SetAccum<STRING> @@unknown;
+  E = SELECT e FROM Event:e
+      WHERE e.sport_norm == sport_norm AND e.edition_year == year AND e.season == season
+      ACCUM @@n_candidates += 1,
+        IF e.has_competitors THEN @@max_value += e.competitors
+        ELSE @@n_unknown += 1, @@unknown += e.event_id END
+      ORDER BY e.competitors DESC, e.title ASC;
+  W = SELECT e FROM E:e WHERE e.has_competitors AND e.competitors == @@max_value;
+  PRINT @@max_value AS max_value, @@n_candidates AS n_candidates, @@n_unknown AS n_unknown, @@unknown AS unknown;
+  PRINT W AS winners;
+  PRINT E AS candidates;
+}
+
+// ---- temporal navigation -------------------------------------------------------------
+CREATE OR REPLACE QUERY previous_event(VERTEX<Event> ev) {
+  ListAccum<STRING> @@sources;
+  Start = {ev};
+  P = SELECT t FROM Start:e -(PREVIOUS_EVENT:pe)-> Event:t ACCUM @@sources += pe.source;
+  Ed = SELECT ed FROM Start:e -(IN_EDITION)-> Edition:ed;
+  PrevEd = SELECT pe2 FROM Ed:ed -(PREVIOUS_EDITION)-> Edition:pe2;
+  PRINT Start AS event;
+  PRINT P AS previous;
+  PRINT @@sources AS sources;
+  PRINT PrevEd AS previous_edition;
+}
+
+CREATE OR REPLACE QUERY next_event(VERTEX<Event> ev) {
+  Start = {ev};
+  N = SELECT t FROM Start:e -(NEXT_EVENT)-> Event:t;
+  PRINT N AS next;
+}
+
+// ---- evidence -------------------------------------------------------------------------
+CREATE OR REPLACE QUERY event_facts(VERTEX<Event> ev) {
+  Start = {ev};
+  F = SELECT f FROM Start:e -(HAS_FACT)-> Fact:f ORDER BY f.predicate ASC;
+  C = SELECT c FROM F:f -(SUPPORTED_BY)-> Chunk:c;
+  M = SELECT m FROM Start:e -(MEDAL_WON_BY:w)-> Entity:m;
+  PRINT Start AS event;
+  PRINT F AS facts;
+  PRINT C[C.chunk_id, C.doc_id, C.section, C.kind, C.text, C.char_start, C.char_end] AS chunks;
+  PRINT M AS medallists;
+}
+
+CREATE OR REPLACE QUERY event_subgraph(VERTEX<Event> ev) {
+  SetAccum<EDGE> @@edges;
+  Start = {ev};
+  N1 = SELECT t FROM Start:e -((IN_EDITION|IN_SPORT|AT_VENUE|MEDAL_WON_BY|PREVIOUS_EVENT|NEXT_EVENT|EVENT_DOC):x)-> :t ACCUM @@edges += x;
+  PRINT Start AS event;
+  PRINT N1 AS neighbours;
+  PRINT @@edges AS edges;
+}
+
+// ---- entity resolution ----------------------------------------------------------------
+CREATE OR REPLACE QUERY resolve_entity(STRING name_norm, STRING needle) {
+  SetAccum<STRING> @@medals;
+  M = SELECT m FROM Entity:m
+      WHERE (name_norm != "" AND m.name_norm == name_norm) OR (needle != "" AND m.name_norm LIKE "%" + needle + "%")
+      LIMIT 50;
+  E = SELECT e FROM M:m -(WON_MEDAL:w)-> Event:e ACCUM @@medals += m.entity_id + "|" + e.event_id + "|" + w.medal + "|" + w.noc;
+  D = SELECT d FROM M:m -(ENTITY_DOC)-> Document:d;
+  PRINT M AS entities;
+  PRINT E AS events;
+  PRINT @@medals AS medals;
+  PRINT D[D.doc_id, D.title, D.url, D.infobox_type] AS documents;
+}
+
+// ---- health -------------------------------------------------------------------------
+CREATE OR REPLACE QUERY graph_stats() {
+  SumAccum<INT> @@docs; SumAccum<INT> @@chunks; SumAccum<INT> @@events; SumAccum<INT> @@facts;
+  SumAccum<INT> @@entities; SumAccum<INT> @@venues; SumAccum<INT> @@editions; SumAccum<INT> @@sports;
+  SumAccum<INT> @@prev_edges; SumAccum<INT> @@medal_edges;
+  D = SELECT d FROM Document:d ACCUM @@docs += 1;
+  C = SELECT c FROM Chunk:c ACCUM @@chunks += 1;
+  E = SELECT e FROM Event:e ACCUM @@events += 1, @@prev_edges += e.outdegree("PREVIOUS_EVENT"), @@medal_edges += e.outdegree("MEDAL_WON_BY");
+  F = SELECT f FROM Fact:f ACCUM @@facts += 1;
+  N = SELECT n FROM Entity:n ACCUM @@entities += 1;
+  V = SELECT v FROM Venue:v ACCUM @@venues += 1;
+  Ed = SELECT x FROM Edition:x ACCUM @@editions += 1;
+  S = SELECT s FROM Sport:s ACCUM @@sports += 1;
+  PRINT @@docs AS documents, @@chunks AS chunks, @@events AS events, @@facts AS facts, @@entities AS entities,
+        @@venues AS venues, @@editions AS editions, @@sports AS sports, @@prev_edges AS previous_event_edges, @@medal_edges AS medal_edges;
+}
+
+INSTALL QUERY ALL
