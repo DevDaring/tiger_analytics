@@ -46,21 +46,29 @@ class TG:
             if self._token and time.time() < self._token_exp - 300:
                 return self._token
             last = None
-            for url, body in (
-                (f"{self.host}/gsql/v1/tokens", {"secret": self.secret, "lifetime": 86400 * 7}),
-                (f"{self.host}/restpp/requesttoken", {"secret": self.secret, "lifetime": 86400 * 7}),
-            ):
-                try:
-                    r = self._client.post(url, json=body, headers={"Content-Type": "application/json"})
-                    d = r.json()
-                    tok = d.get("token") or (d.get("results") or {}).get("token")
-                    if tok:
-                        self._token = tok
-                        self._token_exp = time.time() + 86400 * 7
-                        return tok
-                    last = d
-                except Exception as e:  # noqa: BLE001
-                    last = str(e)
+            # A Savanna workspace that auto-stopped answers with 502/503 HTML while it resumes:
+            # retry the token exchange until it comes back (auto-start is enabled on the workspace).
+            for attempt in range(10):
+                for url, body in (
+                    (f"{self.host}/gsql/v1/tokens", {"secret": self.secret, "lifetime": 86400 * 7}),
+                    (f"{self.host}/restpp/requesttoken", {"secret": self.secret, "lifetime": 86400 * 7}),
+                ):
+                    try:
+                        r = self._client.post(url, json=body, headers={"Content-Type": "application/json"}, timeout=60.0)
+                        if r.status_code in (502, 503, 504):
+                            last = f"HTTP {r.status_code} (workspace resuming)"
+                            continue
+                        d = r.json()
+                        tok = d.get("token") or (d.get("results") or {}).get("token")
+                        if tok:
+                            self._token = tok
+                            self._token_exp = time.time() + 86400 * 7
+                            return tok
+                        last = d
+                    except Exception as e:  # noqa: BLE001
+                        last = str(e)
+                if attempt < 9:
+                    time.sleep(min(30, 5 * (attempt + 1)))
             raise TigerGraphError(f"could not obtain token from secret: {last}")
 
     def _headers(self) -> dict[str, str]:

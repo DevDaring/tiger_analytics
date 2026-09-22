@@ -35,10 +35,10 @@
     <tspan x="396" dy="18">Event —PREVIOUS_EVENT{source}→ Event</tspan>
   </text>
   <rect x="396" y="290" width="308" height="96" rx="8" fill="#fff" stroke="#e8b89a"/>
-  <text x="408" y="310" font-weight="600">16 installed GSQL queries (read-only)</text>
+  <text x="408" y="310" font-weight="600">17 installed GSQL queries (read-only)</text>
   <text x="408" y="328" fill="#52514e" font-size="12">vectorSearch · scoped vectorSearch · find_events</text>
   <text x="408" y="344" fill="#52514e" font-size="12">aggregate_competitors · max_competitors · previous_event</text>
-  <text x="408" y="360" fill="#52514e" font-size="12">events_at_venue · event_facts · resolve_entity · subgraph</text>
+  <text x="408" y="360" fill="#52514e" font-size="12">events_at_venue · event_facts · cohort_facts · resolve_entity · subgraph</text>
   <text x="408" y="376" fill="#52514e" font-size="12">complete cohort + included / excluded / unknown manifest</text>
   <line x1="340" y1="250" x2="380" y2="250" stroke="#555" marker-end="url(#arr)"/>
 

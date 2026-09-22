@@ -1,61 +1,54 @@
-PODIUM — DEMO VIDEO SCRIPT (target 4:00; Round 2 requires 3–5 min)
-Record at https://tigeranalytics.duckdns.org with the "Run live" pipelines checked (RAG, GraphRAG, Agentic).
-Keep the final frozen run selected in Inspect/Benchmark (run id: see README section 8).
+PODIUM — DEMO SCRIPT (3:00). Numbers below are from the frozen run final-savanna-20260919
+(TigerGraph Savanna 4.2.5, answer model gpt-4.1, judge gemini-2.5-flash).
+Record at https://tigeranalytics.duckdns.org — warm the workspace first (it auto-stops after 60 idle minutes).
 
-0:00–0:20  THE QUESTION
-  "When is an investigation agent worth its cost? Podium answers questions over a frozen Olympic corpus
-   three ways on the same TigerGraph graph — RAG, GraphRAG and Agentic GraphRAG — and shows, per answer,
-   the evidence, the tokens and the reason it stopped."
-  Show: Compare screen header, status pills (TigerGraph connected · graph reconciled).
+0:00–0:12  THE QUESTION
+  "When does an AI agent actually earn its cost? Podium answers the same question three ways — RAG,
+   GraphRAG, and Agentic GraphRAG — on one TigerGraph graph."
+  Show: Compare screen, status pills (TigerGraph connected · graph reconciled · openai:gpt-4.1).
 
-0:20–0:45  SIMPLE LOOKUP (all three agree, agent stops early)
-  Click example pub-009 → Run live.
-  Say: "26 nations — all three agree. RAG finds the infobox chunk by similarity; GraphRAG reads the
-        `nations` fact with its exact source span; the agent satisfies both of its requirements after one
-        graph query and stops with `sufficient_evidence`. Here the agent is overkill — and it says so:
-        same answer, ~2× the tokens."
-  Point at the comparison statement under the cards.
+0:12–0:26  THE CONTRACT
+  "The corpus is 2,951 Wikipedia articles, frozen. Every answer has to carry its evidence: the requirements
+   it had to satisfy, the documents it examined, and the exact source span it cites."
+  Show: docs/architecture.svg, pan corpus → graph → pipelines.
 
-0:45–1:35  COMPLETE-SET COUNT (graph reasoning)
-  Click example pub-001 → Run live.
-  Say: "How many 2018 biathlon events had more than 73 competitors? RAG sees eight chunks and guesses.
-        GraphRAG runs `aggregate_competitors` in TigerGraph over the complete cohort — 11 events —
-        and the strict '>' excludes the men's relay at exactly 73."
-  Click Inspect → on GraphRAG/Agentic: show the candidate table (included/excluded), click a citation:
-  the source viewer highlights `competitors: 87` in the original article at its character offsets.
-  Show the graph path (Event —IN_SPORT→ Sport, HAS_FACT).
+0:26–0:52  LIVE, SIMPLE LOOKUP (pub-009)
+  "How many nations competed in the women's RS:X sailing event at Rio 2016? Running live against Savanna.
+   All three say 26. RAG found the infobox by similarity; GraphRAG read the fact with its source span;
+   the agent checked two requirements, saw nothing missing, and stopped. Same answer, twice the tokens —
+   here the agent is overkill, and it says so."
+  Tokens on screen: RAG 3,153 · GraphRAG 1,604 · Agentic 3,290.
 
-1:35–2:15  ADAPTIVE RECOVERY (the agent changes strategy)
-  Click example rob-006 (cycling 2000, > 15 competitors) → Run live.
-  Say: "Four of the fourteen cycling events have no infobox. GraphRAG's fixed plan reports 9 with bounds
-        9–13 and stops. The agent's coverage check flags 'predicate unknown for 4 candidates', the
-        orchestrator picks `repair_missing_count`, the evidence specialist reads each article and returns a
-        verbatim quote — 'The twelve riders raced…' — verified character-for-character, then the count is
-        recomputed: 12."
-  Inspect → timeline: point at the strategy-change rows and the prose_extraction rows in the candidate table.
-  (Optional 10 s) rob-011 "Richmond Oval": GraphRAG abstains, agent falls back to fuzzy venue search.
-  (Optional 10 s) pub-044: infobox says 41,000,000 competitors; agent verifies prose (41) and reports the
-  conflict with the exact span, keeping the infobox as the primary source.
+0:52–1:20  COUNTING NEEDS THE WHOLE COHORT (pub-001)
+  "How many biathlon events at the 2018 Winter Olympics had more than 73 competitors? RAG guesses 1.
+   GraphRAG runs one GSQL query over the complete cohort — all 11 events — and the strict '>' excludes the
+   men's relay at exactly 73. The answer is 5, every candidate listed, down to character offsets."
+  Show: Inspect → candidate table (included/excluded) → click a citation → highlighted span.
 
-2:15–3:05  MEASURED VALUE (benchmark dashboard)
-  Benchmark tab, public split. Read the three tiles and the by-type table:
-  "On the 100 public questions: RAG 47%, GraphRAG 96%, Agentic 98% exact match. The agent's lift is 2
-   points with a bootstrap CI that includes zero — on this benchmark, GraphRAG is almost always enough.
-   Where the agent helps is missing or corrupt evidence and venue spellings; where it doesn't, it costs
-   ~4,000 extra tokens per question. The fixed-plan control — same planner, no replanning — separates
-   adaptation from planning."
-  Switch split to robustness: "22 labelled questions — paraphrases, missing fields, ambiguity, unanswerable —
-   kept separate from the official numbers." Show the failure explorer; click one.
+1:20–1:52  WHERE THE AGENT EARNS IT (rob-006)
+  "Cycling at Sydney 2000: 14 events, four with no competitor count in the infobox. GraphRAG's fixed plan
+   reports 9, bounded 9–13, and stops. The agent's coverage check flags four unknown candidates, picks
+   evidence repair, reads those four articles, and returns verbatim quotes — 'The twelve riders raced
+   against each other' — verified character by character. Recomputed answer: 12."
+  Show: requirements ledger, prose_extraction rows, strategy-change rows in the timeline.
 
-3:05–3:35  HOW IT IS BUILT (architecture tab)
-  "Deterministic parser → 17,904 chunks with offsets → TigerGraph: Document/Chunk (VECTOR 1536)/Event/
-   Edition/Sport/Venue/Entity/Fact with SUPPORTED_BY spans and PREVIOUS_EVENT edges → 16 installed GSQL
-   queries. The same typed tools serve GraphRAG and the agent; only the agent has the requirements ledger
-   and the orchestrator."
-  Show the system status JSON (graph counts reconciled with the manifest).
+1:52–2:10  CONFLICTS AND AMBIGUITY (pub-044, pub-099)
+  "The corpus also contradicts itself. One fencing infobox claims 41,000,000 competitors; the prose says 41.
+   Podium keeps the corpus value, flags the conflict with its span, and when two events share a venue and a
+   date, it reports both winners instead of guessing."
 
-3:35–4:00  LIMITS AND NEXT
-  "Counts are complete only relative to the corpus; ambiguity is reported, not guessed; hidden answers are
-   exported raw with tokens and traces. For Round 2 the Fact vertices already carry provenance — adding
-   valid/knowledge time and SUPERSEDES edges turns today's conflict report into temporal reasoning."
-  End on the README results table.
+2:10–2:42  DOES IT PAY FOR ITSELF?
+  "On the 100 public questions: RAG 51%, GraphRAG 99%, agentic 99%. The paired lift is zero — and we report
+   that; this benchmark has almost no evidence gaps, and the fixed-plan control confirms it. On the 22
+   robustness questions, where evidence is missing, corrupt or ambiguous: GraphRAG 77%, the agent 100% —
+   nearly 23 points of lift for about 2,000 extra tokens."
+  Show: Benchmark public tiles + by-type chart, then switch to robustness.
+
+2:42–3:00  REPRODUCIBLE
+  "17,904 chunks, 17 installed GSQL queries, frozen runs, and raw hidden-set outputs with full traces.
+   Podium investigates until its evidence is sufficient — and shows when an agent was worth it."
+  Show: #about status JSON, end card with the dashboard URL and the repo.
+
+Q&A ready: why agentic (two traces with different action sequences + fixed-plan control) · why TigerGraph
+(17 installed queries, vectorSearch, cohort aggregates, spans) · could GraphRAG alone do it (yes on the
+public set — shown) · what fails (pub-099 ambiguity, RAG on aggregation) · hidden set is unscored by us.
